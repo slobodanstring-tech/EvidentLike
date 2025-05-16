@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <title>Glasovno Zakazivanje</title>
+  <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css' rel='stylesheet' />
+  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+  <style>
+    #calendar { max-width: 900px; margin: 40px auto; }
+    button { padding: 10px 20px; font-size: 16px; }
+    #recognizedText { text-align: center; margin-top: 10px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div style="text-align:center">
+    <button onclick="startRecognition()">Govori Zakazivanje</button>
+    <div id="recognizedText"></div>
+  </div>
+  <div id='calendar'></div>
+
+  <script>
+    let calendar;
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const calendarEl = document.getElementById('calendar');
+      calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        editable: true,
+        eventClick: function(info) {
+          const currentTitle = info.event.title;
+          const currentDate = info.event.start;
+
+          const newTitle = prompt("Izmeni ime pacijenta:", currentTitle);
+          if (newTitle === null) return;
+
+          const newDate = prompt("Izmeni datum (YYYY-MM-DD):", currentDate.toISOString().slice(0, 10));
+          if (newDate === null) return;
+
+          const newTime = prompt("Izmeni vreme (HH:MM):", currentDate.toTimeString().slice(0, 5));
+          if (newTime === null) return;
+
+          const newDateTime = new Date(`${newDate}T${newTime}`);
+
+          if (!isNaN(newDateTime)) {
+            info.event.setProp("title", newTitle);
+            info.event.setStart(newDateTime);
+          } else {
+            alert("Neispravan unos datuma ili vremena.");
+          }
+        }
+      });
+      calendar.render();
+
+      fetch('http://localhost:3000/appointments')
+        .then(res => res.json())
+        .then(data => {
+          data.forEach(appt => {
+            calendar.addEvent({
+              title: appt.patientName,
+              start: appt.appointmentDate,
+              allDay: false
+            });
+          });
+        });
+    });
+
+    function startRecognition() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'sr-RS';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onresult = function(event) {
+        const text = event.results[0][0].transcript;
+        document.getElementById('recognizedText').innerText = "Prepoznato: " + text;
+        console.log('Prepoznato:', text);
+
+        fetch('http://localhost:3000/parse-appointment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sentence: text })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.patientName && data.appointmentDate) {
+            calendar.addEvent({
+              title: data.patientName,
+              start: data.appointmentDate,
+              allDay: false
+            });
+          } else {
+            alert("Nije uspelo da prepozna podatke.");
+          }
+        })
+        .catch(async err => {
+          const errText = await err.text?.() || err.message;
+          alert("Greška u serveru: " + errText);
+        });
+      };
+
+      recognition.start();
+    }
+  </script>
+</body>
+</html>
