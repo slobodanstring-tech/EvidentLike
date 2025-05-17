@@ -1,0 +1,255 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: #f9f9f9;
+  padding: 0px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(4, 1fr);
+  height: 100vh;
+  flex: 1;
+}
+
+.cell {
+  background: #ffffff;
+    padding: clamp(6px, 2vw, 12px);
+  border-left:1px solid #d9d9d9;
+  border-top:1px solid #d9d9d9;
+  /* box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05); */
+  
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cell > *:not(:last-child) {
+  margin-bottom: 6px; /* razmak između elemenata unutar ćelije */
+}
+
+.cell h3 {
+  margin: 0 0 8px 0;
+  font-size: .8rem;
+}
+
+.cell .date-label {
+  font-size: .6rem;
+  color:#999
+}
+
+.prev-month,
+.next-month{
+  color:#b9b9b9
+
+}
+
+.event {
+  background: #e3f2fd;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  margin-top: auto;
+}
+
+.cell.mini-calendar {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.mini-calendar .calendar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-size: clamp(0.5rem, 2vw, 0.75rem);
+}
+
+.calendar-header {
+  text-align: center;
+  font-weight: bold;
+  font-size: clamp(0.8rem, 1.5vw, 1rem);
+  margin-bottom: 6px;
+  text-transform: capitalize;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.calendar-header button {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #444;
+  padding: 0 6px;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  font-size: clamp(0.5rem, 1.5vw, 0.75rem);
+  text-align: center;
+  color: #555;
+  margin-bottom: 3px;
+}
+
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 1fr;
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+  gap: 1px;
+}
+
+.calendar-day {
+  font-size: clamp(0.5rem, 1.5vw, 0.75rem);
+  text-align: center;
+  padding: 2px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.calendar-day:hover {
+  background-color: #eee;
+}
+
+.calendar-day.today {
+  color: #1976d2;
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(4, 1fr);
+  }
+
+  .cell {
+    height: 100%;
+  }
+
+  .calendar-day {
+    padding: 0;
+  }
+
+  .calendar-header,
+  .calendar-weekdays,
+  .calendar-day {
+    font-size: clamp(0.5rem, 1.5vw, 0.75rem);
+  }
+}
+
+.top-bar {
+  font-size: 20px;
+  flex-shrink: 0;
+  font-weight: bold;
+  padding: 6px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  min-height: 50px;
+}
+
+.calendar-day {
+  font-size: clamp(12px, 3vw, 14px);
+}
+.calendar-header {
+  font-size: clamp(16px, 4vw, 20px);
+}
+
+.calendar-day.week-selected {
+  background-color: #e3f2fd;
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+.top-bar button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #1976d2;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.top-bar button:hover {
+  background-color: rgba(25, 118, 210, 0.1);
+}
+
+#today-btn{
+  font-size: 12px;
+  border: 1px solid #999;
+  border-radius: 100px;
+  padding: 6px 10px;
+  cursor: pointer;
+  color: #000;
+}
+
+.cell-today h3{
+ color:#1976d2;
+}
+.cell-today span{
+  background-color: #e3f2fd;
+  border: 2px solid #2196f3;
+  border-radius: 100px;
+  padding: 4px;
+  color:#1976d2;
+
+}
+
+
+.bottom-bar {
+  flex-shrink: 0;
+  width: 100%;
+  background: #ffffff;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 6px 0;
+  z-index: 1000;
+  margin-top:1px;
+  min-height: 60px;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 12px;
+  color: #555;
+}
+
+.nav-item i {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+body { display: flex; flex-direction: column; height: 100vh; }

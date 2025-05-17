@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Evident App</title>
+		<link rel="stylesheet" href="/css/style.css" />
+    <link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+/>
+
+	</head>
+	<body>
+		<div class="top-bar">
+			<div class="month-top">
+				<button id="prev-month">←</button>
+				<span id="month-name">Maj</span>
+				<button id="next-month">→</button>
+			</div>
+			<button id="today-btn">Danas</button>
+		</div>
+
+		<div class="grid">
+			<div class="cell mini-calendar">
+				<div class="calendar">
+					<div class="calendar-weekdays">
+						<div>Pon</div>
+						<div>Uto</div>
+						<div>Sre</div>
+						<div>Čet</div>
+						<div>Pet</div>
+						<div>Sub</div>
+						<div>Ned</div>
+					</div>
+					<div class="calendar-days" id="calendar-days"></div>
+				</div>
+			</div>
+			<div class="cell">
+				<h3>Pon <span class="date-label" id="date-mon"></span></h3>
+				<div class="event"></div>
+			</div>
+			<div class="cell">
+				<h3>Uto <span class="date-label" id="date-tue"></span></h3>
+				<div class="event"></div>
+			</div>
+			<div class="cell">
+				<h3>Sre <span class="date-label" id="date-wed"></span></h3>
+				<div class="event"></div>
+			</div>
+			<div class="cell">
+				<h3>Čet <span class="date-label" id="date-thu"></span></h3>
+				<div class="event"></div>
+			</div>
+			<div class="cell">
+				<h3>Pet <span class="date-label" id="date-fri"></span></h3>
+				<div class="event"></div>
+			</div>
+			<div class="cell">
+				<h3>Sub <span class="date-label" id="date-sat"></span></h3>
+				<div class="event"></div>
+			</div>
+			<div class="cell">
+				<h3>Ned <span class="date-label" id="date-sun"></span></h3>
+				<div class="event"></div>
+			</div>
+		</div>
+<div class="bottom-bar">
+  <div class="nav-item">
+    <i class="fas fa-calendar-alt"></i>
+    <span>Kalendar</span>
+  </div>
+  <div class="nav-item">
+    <i class="fas fa-user-friends"></i>
+    <span>Klijenti</span>
+  </div>
+  <div class="nav-item">
+    <i class="fas fa-wallet"></i>
+    <span>Troškovi</span>
+  </div>
+</div>
+		<script src="/js/main.js"></script>
+	</body>
+</html>
