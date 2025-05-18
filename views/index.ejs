@@ -10,6 +10,10 @@
   href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
 />
 
+<!-- Flatpickr -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
 	</head>
 	<body>
 		<div class="top-bar">
@@ -38,37 +42,37 @@
 			</div>
 			<div class="cell">
 				<h3>Pon <span class="date-label" id="date-mon"></span></h3>
-				<div class="event"></div>
+        <div class="event"></div>
 			</div>
 			<div class="cell">
 				<h3>Uto <span class="date-label" id="date-tue"></span></h3>
-				<div class="event"></div>
+        <div class="event"></div>
 			</div>
 			<div class="cell">
 				<h3>Sre <span class="date-label" id="date-wed"></span></h3>
-				<div class="event"></div>
+        <div class="event"></div>
 			</div>
 			<div class="cell">
 				<h3>Čet <span class="date-label" id="date-thu"></span></h3>
-				<div class="event"></div>
+        <div class="event"></div>
 			</div>
 			<div class="cell">
 				<h3>Pet <span class="date-label" id="date-fri"></span></h3>
-				<div class="event"></div>
+        <div class="event"></div>
 			</div>
 			<div class="cell">
 				<h3>Sub <span class="date-label" id="date-sat"></span></h3>
-				<div class="event"></div>
+        <div class="event"></div>
 			</div>
 			<div class="cell">
 				<h3>Ned <span class="date-label" id="date-sun"></span></h3>
-				<div class="event"></div>
+        <div class="event"></div>
 			</div>
 		</div>
 <div class="bottom-bar">
   <div class="nav-item">
-    <i class="fas fa-calendar-alt"></i>
-    <span>Kalendar</span>
+    <i class="fas fa-calendar-alt active"></i>
+    <span class="active">Kalendar</span>
   </div>
   <div class="nav-item">
     <i class="fas fa-user-friends"></i>
@@ -79,6 +83,17 @@
     <span>Troškovi</span>
   </div>
 </div>
+<div class="modal hidden" id="dayModal">
+  <div class="modal-content">
+    <h3 id="modal-day-title"></h3>
+    <input type="text" id="clientName" placeholder="Ime i prezime" />
+    <input type="text" id="clientTime" placeholder="Vreme" readonly />
+    <textarea id="clientNote" placeholder="Opis..."></textarea>
+    <button onclick="saveClient()">Sačuvaj</button>
+    <button onclick="closeModal()">Otkaži</button>
+  </div>
+</div>
+<div id="clientPopup" class="client-popup hidden" onclick="deleteClient(this)">Obriši</div>
 		<script src="/js/main.js"></script>
 	</body>
 </html>
