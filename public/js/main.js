@@ -1,6 +1,14 @@
 // main.js
 
 let currentDate = new Date();
+let selectedCellElement = null;
+let longPressTimer = null;
+let targetClientDiv = null;
+let flatpickrInstance = null;
+const clientData = {}; // ključ: ISO datum, vrednost: niz klijenata
+
+
+
 
 function updateWeekdayDates(baseDate) {
   const dayIds = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
@@ -23,6 +31,7 @@ function updateWeekdayDates(baseDate) {
       }
     }
   });
+  renderClientsForCurrentWeek();
 }
 
 function getMonday(d) {
@@ -46,7 +55,11 @@ document.addEventListener('DOMContentLoaded', () => {
       generateMiniCalendar(today.getFullYear(), today.getMonth());
     });
   }
+  document.querySelectorAll(".client-entry").forEach(div => {
+    addLongPressToClientDiv(div);
+  });
 });
+
 
 function generateMiniCalendar(year, month) {
   const daysContainer = document.getElementById('calendar-days');
@@ -162,5 +175,186 @@ if (nextBtn) {
   nextBtn.addEventListener('click', () => {
     currentDate.setMonth(currentDate.getMonth() + 1);
     generateMiniCalendar(currentDate.getFullYear(), currentDate.getMonth());
+  });
+}
+
+document.querySelectorAll(".grid .cell").forEach(cell => {
+  const title = cell.querySelector("h3");
+  if (title) {
+    title.addEventListener("click", () => {
+      const dayText = title.textContent.trim();
+      selectedCellElement = cell;
+      openDayModal(dayText);
+    });
+  }
+});
+
+function closeModal() {
+  document.getElementById("dayModal").classList.add("hidden");
+}
+
+function saveClient() {
+  const name = document.getElementById("clientName").value;
+  const time = document.getElementById("clientTime").value;
+  const note = document.getElementById("clientNote").value;
+
+  if (!name || !time) {
+    alert("Unesite ime i vreme");
+    return;
+  }
+
+  if (selectedCellElement) {
+    const label = selectedCellElement.querySelector(".date-label");
+    const parentH3 = selectedCellElement.querySelector("h3");
+    const dayName = parentH3.textContent.split(" ")[0]; // npr. "Pon"
+    const dayNumber = label.textContent.trim();
+
+    const baseDate = getMonday(currentDate);
+    const weekdays = ["Pon", "Uto", "Sre", "Čet", "Pet", "Sub", "Ned"];
+    const dayIndex = weekdays.indexOf(dayName);
+    const date = new Date(baseDate);
+    date.setDate(baseDate.getDate() + dayIndex);
+    const iso = date.toISOString().split("T")[0];
+
+    if (!clientData[iso]) clientData[iso] = [];
+    clientData[iso].push({ name, time, note });
+
+    renderClientsForCurrentWeek(); // ponovo iscrtaj sve
+  }
+
+  closeModal();
+}
+
+
+
+function addLongPressToClientDiv(div) {
+  let timer;
+
+  const start = (e) => {
+    e.preventDefault();
+    targetClientDiv = div;
+
+    timer = setTimeout(() => {
+      const x = e.touches ? e.touches[0].pageX : e.pageX;
+      const y = e.touches ? e.touches[0].pageY : e.pageY;
+      showDeletePopup(x, y);
+    }, 600); // 600ms long press
+  };
+
+  const cancel = () => {
+    clearTimeout(timer);
+  };
+
+  div.addEventListener("mousedown", start);
+  div.addEventListener("touchstart", start, { passive: false });
+
+  div.addEventListener("mouseup", cancel);
+  div.addEventListener("mouseleave", cancel);
+  div.addEventListener("touchend", cancel);
+  div.addEventListener("touchcancel", cancel);
+}
+
+
+
+
+
+function openDayModal(dayText) {
+  document.getElementById("modal-day-title").textContent = dayText;
+  document.getElementById("clientName").value = "";
+  document.getElementById("clientTime").value = "";
+  document.getElementById("clientNote").value = "";
+  document.getElementById("dayModal").classList.remove("hidden");
+
+  if (flatpickrInstance) flatpickrInstance.destroy();
+  flatpickrInstance = flatpickr("#clientTime", {
+    enableTime: true,
+    noCalendar: true,
+    dateFormat: "H:i",
+    time_24hr: true
+  });
+}
+
+
+document.addEventListener("mouseup", () => {
+  clearTimeout(longPressTimer);
+});
+
+document.addEventListener("mouseleave", () => {
+  clearTimeout(longPressTimer);
+});
+
+document.addEventListener("click", (e) => {
+  const popup = document.getElementById("clientPopup");
+  if (popup && !popup.contains(e.target) && e.target !== popup) {
+    popup.classList.add("hidden");
+  }
+});
+
+function showDeletePopup(x, y) {
+  const popup = document.getElementById("clientPopup");
+  if (popup) {
+    popup.style.top = `${y}px`;
+    popup.style.left = `${x}px`;
+    popup.classList.remove("hidden");
+  }
+}
+function deleteClient(popupEl) {
+  if (targetClientDiv && selectedCellElement) {
+    const text = targetClientDiv.textContent;
+    const [time, name] = text.split(" - ");
+
+    const label = selectedCellElement.querySelector(".date-label");
+    const parentH3 = selectedCellElement.querySelector("h3");
+    const dayName = parentH3.textContent.split(" ")[0];
+
+    const baseDate = getMonday(currentDate);
+    const weekdays = ["Pon", "Uto", "Sre", "Čet", "Pet", "Sub", "Ned"];
+    const dayIndex = weekdays.indexOf(dayName);
+    const date = new Date(baseDate);
+    date.setDate(baseDate.getDate() + dayIndex);
+    const iso = date.toISOString().split("T")[0];
+
+    if (clientData[iso]) {
+      clientData[iso] = clientData[iso].filter(entry => !(entry.name === name && entry.time === time));
+    }
+
+    renderClientsForCurrentWeek(); // osveži prikaz
+    popupEl.classList.add("hidden");
+    targetClientDiv = null;
+  }
+}
+
+
+function renderClientsForCurrentWeek() {
+  const baseDate = getMonday(currentDate);
+  const dayIds = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+
+  dayIds.forEach((id, index) => {
+    const dayDate = new Date(baseDate);
+    dayDate.setDate(baseDate.getDate() + index);
+    const iso = dayDate.toISOString().split("T")[0];
+
+    const cell = document.getElementById(`date-${id}`)?.closest(".cell");
+    if (cell) {
+      const eventContainer = cell.querySelector(".event");
+      eventContainer.innerHTML = "";
+
+      if (clientData[iso]) {
+        const sortedClients = clientData[iso].sort((a, b) => {
+          const [h1, m1] = a.time.split(":").map(Number);
+          const [h2, m2] = b.time.split(":").map(Number);
+          return h1 * 60 + m1 - (h2 * 60 + m2);
+        });
+
+        sortedClients.forEach(client => {
+          const div = document.createElement("div");
+          div.classList.add("client-entry");
+          div.textContent = `${client.time} - ${client.name}`;
+          if (client.note) div.title = client.note;
+          addLongPressToClientDiv(div);
+          eventContainer.appendChild(div);
+        });
+      }
+    }
   });
 }
