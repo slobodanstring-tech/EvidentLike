@@ -231,17 +231,18 @@ function addLongPressToClientDiv(div) {
   let timer;
 
   const start = (e) => {
-    e.preventDefault();
+    console.log("Long press započet na", div);
     targetClientDiv = div;
-
     timer = setTimeout(() => {
       const x = e.touches ? e.touches[0].pageX : e.pageX;
       const y = e.touches ? e.touches[0].pageY : e.pageY;
+      console.log("Long press detektovan na", div, "koordinate:", x, y);
       showDeletePopup(x, y);
-    }, 600); // 600ms long press
+    }, 600);
   };
 
   const cancel = () => {
+    console.log("Long press otkazan");
     clearTimeout(timer);
   };
 
@@ -252,6 +253,23 @@ function addLongPressToClientDiv(div) {
   div.addEventListener("mouseleave", cancel);
   div.addEventListener("touchend", cancel);
   div.addEventListener("touchcancel", cancel);
+}
+
+function showDeletePopup(x, y) {
+  console.log("Pokušavam da prikažem delete popup na", x, y);
+  let popup = document.getElementById("clientPopup");
+  if (!popup) {
+    console.warn("clientPopup ne postoji, kreiram ga");
+    popup = document.createElement("div");
+    popup.id = "clientPopup";
+    popup.className = "client-popup";
+    popup.innerHTML = `<button onclick="deleteClient(this.parentElement)">Obriši</button>`;
+    document.body.appendChild(popup);
+  }
+  popup.style.top = `${y}px`;
+  popup.style.left = `${x}px`;
+  popup.classList.remove("hidden");
+  console.log("Popup prikazan:", popup);
 }
 
 
@@ -291,12 +309,17 @@ document.addEventListener("click", (e) => {
 });
 
 function showDeletePopup(x, y) {
-  const popup = document.getElementById("clientPopup");
-  if (popup) {
-    popup.style.top = `${y}px`;
-    popup.style.left = `${x}px`;
-    popup.classList.remove("hidden");
+  let popup = document.getElementById("clientPopup");
+  if (!popup) {
+    popup = document.createElement("div");
+    popup.id = "clientPopup";
+    popup.className = "client-popup";
+    popup.innerHTML = `<button onclick="deleteClient(this.parentElement)">Obriši</button>`;
+    document.body.appendChild(popup);
   }
+  popup.style.top = `${y}px`;
+  popup.style.left = `${x}px`;
+  popup.classList.remove("hidden");
 }
 function deleteClient(popupEl) {
   if (targetClientDiv && selectedCellElement) {
@@ -327,34 +350,177 @@ function deleteClient(popupEl) {
 
 function renderClientsForCurrentWeek() {
   const baseDate = getMonday(currentDate);
+  console.log("currentDate:", currentDate, "baseDate:", baseDate);
   const dayIds = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+  console.log("clientData:", clientData);
 
   dayIds.forEach((id, index) => {
     const dayDate = new Date(baseDate);
     dayDate.setDate(baseDate.getDate() + index);
     const iso = dayDate.toISOString().split("T")[0];
+    console.log(`Obrada dana: ${id}, datum: ${iso}`);
 
     const cell = document.getElementById(`date-${id}`)?.closest(".cell");
-    if (cell) {
-      const eventContainer = cell.querySelector(".event");
-      eventContainer.innerHTML = "";
+    if (!cell) {
+      console.error(`Nema ćelije za date-${id}`);
+      return;
+    }
 
-      if (clientData[iso]) {
-        const sortedClients = clientData[iso].sort((a, b) => {
-          const [h1, m1] = a.time.split(":").map(Number);
-          const [h2, m2] = b.time.split(":").map(Number);
-          return h1 * 60 + m1 - (h2 * 60 + m2);
+    const eventContainer = cell.querySelector(".event");
+    if (!eventContainer) {
+      console.error(`Nema .event kontejnera za date-${id}`);
+      return;
+    }
+    eventContainer.innerHTML = "";
+
+    if (clientData[iso]) {
+      console.log(`Podaci za ${iso}:`, clientData[iso]);
+      const sortedClients = clientData[iso].sort((a, b) => {
+        if (!a.time || !b.time || !a.time.includes(":")) {
+          console.error("Neispravan format vremena:", a, b);
+          return 0;
+        }
+        const [h1, m1] = a.time.split(":").map(Number);
+        const [h2, m2] = b.time.split(":").map(Number);
+        return h1 * 60 + m1 - (h2 * 60 + m2);
+      });
+
+      sortedClients.forEach(client => {
+        const div = document.createElement("div");
+        div.classList.add("client-entry");
+        div.textContent = `${client.time} - ${client.name}`;
+        console.log(div, '❗❗❗client is made');
+
+        div.addEventListener("click", (e) => {
+          e.stopPropagation();
+          console.log('client is clicked ➡️');
+          const x = e.pageX;
+          const y = e.pageY;
+          try {
+            showClientInfoPopup(client, x, y);
+          } catch (error) {
+            console.error("Greška u showClientInfoPopup:", error);
+          }
         });
 
-        sortedClients.forEach(client => {
-          const div = document.createElement("div");
-          div.classList.add("client-entry");
-          div.textContent = `${client.time} - ${client.name}`;
-          if (client.note) div.title = client.note;
-          addLongPressToClientDiv(div);
-          eventContainer.appendChild(div);
-        });
-      }
+        if (client.note) div.title = client.note;
+
+        addLongPressToClientDiv(div);
+        eventContainer.appendChild(div);
+      });
+    } else {
+      console.log(`Nema podataka za ${iso}`);
     }
   });
 }
+
+// Primer ispravne getMonday funkcije
+function getMonday(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  console.log("getMonday input:", date, "output:", d);
+  return d;
+}
+
+function showClientInfoPopup(client, x, y) {
+  let popup = document.getElementById("clientInfoPopup");
+
+  if (!popup) {
+    popup = document.createElement("div");
+    popup.id = "clientInfoPopup";
+    popup.className = "client-info-popup md3-dialog";
+    document.body.appendChild(popup);
+  }
+
+  popup.innerHTML = `
+    <div class="md3-dialog__header">
+      <h3 class="md3-dialog__title">${client.name}</h3>
+    </div>
+    <div class="md3-dialog__content">
+      <p><strong>Vreme:</strong> ${client.time}</p>
+      <p><strong>Napomena:</strong> ${client.note || "Nema napomene"}</p>
+    </div>
+    <div class="md3-dialog__actions">
+      <button class="md3-button md3-button--text" onclick="closeClientInfoPopup()">Zatvori</button>
+    </div>
+  `;
+
+  // Postavi poziciju i proveri granice ekrana
+  const popupWidth = 280; // Fiksna širina za MD3 dialog
+  const popupHeight = popup.offsetHeight || 200; // Procenjena visina
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  // Osiguraj da popup ostane unutar ekrana
+  let adjustedX = x;
+  let adjustedY = y;
+  if (x + popupWidth > viewportWidth) {
+    adjustedX = viewportWidth - popupWidth - 8; // 8px margina
+  }
+  if (y + popupHeight > viewportHeight) {
+    adjustedY = viewportHeight - popupHeight - 8;
+  }
+
+  popup.style.left = `${adjustedX}px`;
+  popup.style.top = `${adjustedY}px`;
+  popup.classList.remove("hidden");
+}
+
+function closeClientInfoPopup() {
+  const popup = document.getElementById("clientInfoPopup");
+  if (popup) popup.classList.add("hidden");
+}
+
+function showClientInfoPopup(client, x, y) {
+  let popup = document.getElementById("clientInfoPopup");
+
+  if (!popup) {
+    popup = document.createElement("div");
+    popup.id = "clientInfoPopup";
+    popup.className = "client-info-popup md3-dialog";
+    document.body.appendChild(popup);
+  }
+
+  popup.innerHTML = `
+    <div class="md3-dialog__header">
+      <h3 class="md3-dialog__title">${client.name}</h3>
+    </div>
+    <div class="md3-dialog__content">
+      <p><strong>Vreme:</strong> ${client.time}</p>
+      <p><strong>Napomena:</strong> ${client.note || "Nema napomene"}</p>
+    </div>
+    <div class="md3-dialog__actions">
+      <button class="md3-button md3-button--text" onclick="closeClientInfoPopup()">Zatvori</button>
+    </div>
+  `;
+
+  // Postavi poziciju i proveri granice ekrana
+  const popupWidth = 280; // Fiksna širina za MD3 dialog
+  const popupHeight = popup.offsetHeight || 200; // Procenjena visina
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  // Osiguraj da popup ostane unutar ekrana
+  let adjustedX = x;
+  let adjustedY = y;
+  if (x + popupWidth > viewportWidth) {
+    adjustedX = viewportWidth - popupWidth - 8; // 8px margina
+  }
+  if (y + popupHeight > viewportHeight) {
+    adjustedY = viewportHeight - popupHeight - 8;
+  }
+
+  popup.style.left = `${adjustedX}px`;
+  popup.style.top = `${adjustedY}px`;
+  popup.classList.remove("hidden");
+}
+
+function closeClientInfoPopup() {
+  const popup = document.getElementById("clientInfoPopup");
+  if (popup) popup.classList.add("hidden");
+}
+
+
