@@ -352,3 +352,250 @@ body {
 .client-popup.hidden {
   display: none;
 }
+.client-info-popup {
+  position: absolute;
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 10px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+  z-index: 9999;
+}
+
+
+.client-entry {
+  border: 1px solid black;
+  padding: 5px;
+  margin: 2px;
+  cursor: pointer;
+  background-color: white;
+  z-index: 10;
+  user-select: none;
+}
+
+.client-info-popup {
+  position: absolute;
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 14px 16px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  font-size: 16px;
+  z-index: 9999;
+  max-width: 90vw;
+  min-width: 240px;
+  word-wrap: break-word;
+}
+
+@media (max-width: 600px) {
+  .client-info-popup {
+    font-size: 16px;
+    padding: 16px;
+    width: 90vw;
+    left: 5% !important;
+    top: 20% !important;
+    transform: none !important;
+    height: 60vh;
+  }
+}
+
+.client-info-popup button {
+  margin-top: 10px;
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  width: 100%;
+}
+
+/* MD3 Dialog stilovi */
+.client-info-popup.md3-dialog {
+  position: absolute;
+  width: 280px; /* Standardna širina za MD3 dijaloge */
+  background-color: #ffffff; /* surface, može se promeniti za tamnu temu */
+  border-radius: 28px; /* Zaobljeni uglovi */
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Elevation level 3 */
+  z-index: 1000;
+  overflow: hidden;
+  font-family: 'Roboto', sans-serif; /* MD3 preporučuje Roboto */
+}
+
+/* Header */
+.md3-dialog__header {
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12); /* Suptilna linija */
+}
+
+.md3-dialog__title {
+  margin: 0;
+  font-size: 20px; /* title-large */
+  font-weight: 500;
+  line-height: 32px;
+  color: #1c2526; /* on-surface */
+}
+
+/* Content */
+.md3-dialog__content {
+  padding: 16px 24px;
+  font-size: 16px; /* body-medium */
+  line-height: 24px;
+  color: #1c2526; /* on-surface */
+}
+
+.md3-dialog__content p {
+  margin: 8px 0;
+}
+
+/* Actions */
+.md3-dialog__actions {
+  padding: 8px 24px 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* MD3 Button */
+.md3-button {
+  padding: 8px 16px;
+  border-radius: 20px; /* Zaobljeni uglovi za dugmad */
+  font-size: 14px; /* label-large */
+  font-weight: 500;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.md3-button--text {
+  background-color: transparent;
+  color: #6750a4; /* primary */
+  border: none;
+}
+
+.md3-button--text:hover {
+  background-color: rgba(103, 80, 164, 0.08); /* primary sa opacity */
+}
+
+.md3-button--text:active {
+  background-color: rgba(103, 80, 164, 0.12);
+}
+
+/* Skriveni popup */
+.client-info-popup.hidden {
+  display: none;
+}
+
+/* MD3 Bottom Sheet */
+.client-info-bottom-sheet.md3-bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 640px; /* Standardna širina za MD3 Bottom Sheet */
+  margin: 0 auto;
+  background-color: #ffffff; /* surface */
+  border-top-left-radius: 28px;
+  border-top-right-radius: 28px;
+  box-shadow: 0 -8px 16px rgba(0, 0, 0, 0.2); /* Elevation level 3 */
+  z-index: 1000;
+  font-family: 'Roboto', sans-serif;
+  transform: translateY(100%);
+  transition: transform 0.3s ease-out;
+}
+
+.client-info-bottom-sheet:not(.hidden) {
+  transform: translateY(0);
+}
+
+.md3-bottom-sheet__header {
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.md3-bottom-sheet__title {
+  margin: 0;
+  font-size: 20px; /* title-large */
+  font-weight: 500;
+  line-height: 32px;
+  color: #1c2526; /* on-surface */
+}
+
+.md3-bottom-sheet__content {
+  padding: 16px 24px;
+}
+
+.md3-text-field {
+  margin-bottom: 16px;
+}
+
+.md3-text-field label {
+  display: block;
+  font-size: 12px; /* label-medium */
+  font-weight: 500;
+  color: #1c2526; /* on-surface */
+  margin-bottom: 4px;
+}
+
+.md3-text-field__input {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px; /* body-medium */
+  border: 1px solid rgba(0, 0, 0, 0.38); /* outline */
+  border-radius: 4px;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.md3-text-field__input:focus {
+  outline: none;
+  border-color: #6750a4; /* primary */
+}
+
+.md3-text-field textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.md3-bottom-sheet__actions {
+  padding: 8px 24px 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.md3-button {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px; /* label-large */
+  font-weight: 500;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.md3-button--text {
+  background-color: transparent;
+  color: #6750a4; /* primary */
+  border: none;
+}
+
+.md3-button--text:hover {
+  background-color: rgba(103, 80, 164, 0.08);
+}
+
+.md3-button--filled {
+  background-color: #6750a4; /* primary */
+  color: #ffffff; /* on-primary */
+  border: none;
+}
+
+.md3-button--filled:hover {
+  background-color: #5a4689;
+}
+
+.client-info-bottom-sheet.hidden {
+  display: none;
+}
+
