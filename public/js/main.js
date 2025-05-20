@@ -385,7 +385,7 @@ function renderClientsForCurrentWeek() {
         return h1 * 60 + m1 - (h2 * 60 + m2);
       });
 
-      sortedClients.forEach(client => {
+      sortedClients.forEach((client, clientIndex) => {
         const div = document.createElement("div");
         div.classList.add("client-entry");
         div.textContent = `${client.time} - ${client.name}`;
@@ -397,7 +397,7 @@ function renderClientsForCurrentWeek() {
           const x = e.pageX;
           const y = e.pageY;
           try {
-            showClientInfoPopup(client, x, y);
+            showClientInfoPopup({ ...client, date: iso, index: clientIndex }, x, y);
           } catch (error) {
             console.error("Greška u showClientInfoPopup:", error);
           }
@@ -425,50 +425,6 @@ function getMonday(date) {
   return d;
 }
 
-function showClientInfoPopup(client, x, y) {
-  let popup = document.getElementById("clientInfoPopup");
-
-  if (!popup) {
-    popup = document.createElement("div");
-    popup.id = "clientInfoPopup";
-    popup.className = "client-info-popup md3-dialog";
-    document.body.appendChild(popup);
-  }
-
-  popup.innerHTML = `
-    <div class="md3-dialog__header">
-      <h3 class="md3-dialog__title">${client.name}</h3>
-    </div>
-    <div class="md3-dialog__content">
-      <p><strong>Vreme:</strong> ${client.time}</p>
-      <p><strong>Napomena:</strong> ${client.note || "Nema napomene"}</p>
-    </div>
-    <div class="md3-dialog__actions">
-      <button class="md3-button md3-button--text" onclick="closeClientInfoPopup()">Zatvori</button>
-    </div>
-  `;
-
-  // Postavi poziciju i proveri granice ekrana
-  const popupWidth = 280; // Fiksna širina za MD3 dialog
-  const popupHeight = popup.offsetHeight || 200; // Procenjena visina
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-
-  // Osiguraj da popup ostane unutar ekrana
-  let adjustedX = x;
-  let adjustedY = y;
-  if (x + popupWidth > viewportWidth) {
-    adjustedX = viewportWidth - popupWidth - 8; // 8px margina
-  }
-  if (y + popupHeight > viewportHeight) {
-    adjustedY = viewportHeight - popupHeight - 8;
-  }
-
-  popup.style.left = `${adjustedX}px`;
-  popup.style.top = `${adjustedY}px`;
-  popup.classList.remove("hidden");
-}
-
 function closeClientInfoPopup() {
   const popup = document.getElementById("clientInfoPopup");
   if (popup) popup.classList.add("hidden");
@@ -484,9 +440,15 @@ function showClientInfoPopup(client, x, y) {
     document.body.appendChild(popup);
   }
 
+  // Prosledi date i index za uređivanje
+  popup.dataset.clientData = JSON.stringify(client);
+  popup.dataset.clientIndex = client.index;
+  popup.dataset.clientDate = client.date;
+
   popup.innerHTML = `
     <div class="md3-dialog__header">
-      <h3 class="md3-dialog__title">${client.name}</h3>
+      <h3 class="md3-dialog__title" id="clientNameTitle" onclick="toggleEditName()">${client.name}</h3>
+      <input type="text" id="clientNameInput" value="${client.name}" class="md3-text-field__input hidden" />
     </div>
     <div class="md3-dialog__content">
       <p><strong>Vreme:</strong> ${client.time}</p>
@@ -494,20 +456,20 @@ function showClientInfoPopup(client, x, y) {
     </div>
     <div class="md3-dialog__actions">
       <button class="md3-button md3-button--text" onclick="closeClientInfoPopup()">Zatvori</button>
+      <button class="md3-button md3-button--filled" onclick="saveEditedClientName()">Sačuvaj</button>
     </div>
   `;
 
   // Postavi poziciju i proveri granice ekrana
-  const popupWidth = 280; // Fiksna širina za MD3 dialog
-  const popupHeight = popup.offsetHeight || 200; // Procenjena visina
+  const popupWidth = 280;
+  const popupHeight = popup.offsetHeight || 200;
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
 
-  // Osiguraj da popup ostane unutar ekrana
   let adjustedX = x;
   let adjustedY = y;
   if (x + popupWidth > viewportWidth) {
-    adjustedX = viewportWidth - popupWidth - 8; // 8px margina
+    adjustedX = viewportWidth - popupWidth - 8;
   }
   if (y + popupHeight > viewportHeight) {
     adjustedY = viewportHeight - popupHeight - 8;
@@ -523,4 +485,40 @@ function closeClientInfoPopup() {
   if (popup) popup.classList.add("hidden");
 }
 
+function toggleEditName() {
+  const title = document.getElementById("clientNameTitle");
+  const input = document.getElementById("clientNameInput");
+  if (title && input) {
+    title.classList.toggle("hidden");
+    input.classList.toggle("hidden");
+    if (!input.classList.contains("hidden")) {
+      input.focus(); // Fokusiraj input polje kada se prikaže
+    }
+  }
+}
 
+function saveEditedClientName() {
+  const popup = document.getElementById("clientInfoPopup");
+  if (!popup) return;
+
+  const newName = document.getElementById("clientNameInput").value;
+  if (!newName) {
+    alert("Unesite ime klijenta");
+    return;
+  }
+
+  const clientIndex = parseInt(popup.dataset.clientIndex);
+  const isoDate = popup.dataset.clientDate;
+  const client = JSON.parse(popup.dataset.clientData);
+
+  if (clientData[isoDate] && clientIndex >= 0) {
+    clientData[isoDate][clientIndex] = {
+      name: newName,
+      time: client.time,
+      note: client.note
+    };
+  }
+
+  renderClientsForCurrentWeek();
+  closeClientInfoPopup();
+}
