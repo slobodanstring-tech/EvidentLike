@@ -34,14 +34,6 @@ function updateWeekdayDates(baseDate) {
   renderClientsForCurrentWeek();
 }
 
-function getMonday(d) {
-  const date = new Date(d);
-  const day = date.getDay();
-  const adjusted = (day + 6) % 7;
-  const diff = date.getDate() - adjusted;
-  return new Date(date.getFullYear(), date.getMonth(), diff);
-}
-
 document.addEventListener('DOMContentLoaded', () => {
   const today = new Date();
   currentDate = today;
@@ -253,6 +245,9 @@ function addLongPressToClientDiv(div) {
   div.addEventListener("mouseleave", cancel);
   div.addEventListener("touchend", cancel);
   div.addEventListener("touchcancel", cancel);
+
+  // 🚫 Sprečava browser kontekst meni (desni klik / long press)
+  div.addEventListener("contextmenu", (e) => e.preventDefault());
 }
 
 function showDeletePopup(x, y) {
@@ -288,8 +283,12 @@ function openDayModal(dayText) {
     enableTime: true,
     noCalendar: true,
     dateFormat: "H:i",
-    time_24hr: true
+    time_24hr: true,
+    minuteIncrement: 5,
+    defaultHour: 12,
+    defaultMinute: 0
   });
+  
 }
 
 
@@ -446,19 +445,31 @@ function showClientInfoPopup(client, x, y) {
   popup.dataset.clientDate = client.date;
 
   popup.innerHTML = `
-    <div class="md3-dialog__header">
-      <h3 class="md3-dialog__title" id="clientNameTitle" onclick="toggleEditName()">${client.name}</h3>
-      <input type="text" id="clientNameInput" value="${client.name}" class="md3-text-field__input hidden" />
-    </div>
-    <div class="md3-dialog__content">
-      <p><strong>Vreme:</strong> ${client.time}</p>
-      <p><strong>Napomena:</strong> ${client.note || "Nema napomene"}</p>
-    </div>
-    <div class="md3-dialog__actions">
-      <button class="md3-button md3-button--text" onclick="closeClientInfoPopup()">Zatvori</button>
-      <button class="md3-button md3-button--filled" onclick="saveEditedClientName()">Sačuvaj</button>
-    </div>
-  `;
+  <div class="md3-dialog__header">
+    <h3 class="md3-dialog__title" id="clientNameTitle" onclick="toggleEditName()">${client.name}</h3>
+    <input type="text" id="clientNameInput" value="${client.name}" class="md3-text-field__input hidden" />
+  </div>
+  <div class="md3-dialog__content">
+    <p><strong>Vreme:</strong></p>
+    <input type="text" id="clientTimeInput" value="${client.time}" class="md3-text-field__input" />
+    
+    <p><strong>Napomena:</strong></p>
+    <textarea id="clientNoteInput" class="md3-text-field__textarea">${client.note || ""}</textarea>
+  </div>
+  <div class="md3-dialog__actions">
+    <button class="md3-button md3-button--text" onclick="closeClientInfoPopup()">Zatvori</button>
+    <button class="md3-button md3-button--filled" onclick="saveEditedClientName()">Sačuvaj</button>
+  </div>
+`;
+  flatpickr("#clientTimeInput", {
+    enableTime: true,
+    noCalendar: true,
+    dateFormat: "H:i",
+    time_24hr: true,
+    minuteIncrement: 5
+  });
+
+
 
   // Postavi poziciju i proveri granice ekrana
   const popupWidth = 280;
@@ -501,9 +512,12 @@ function saveEditedClientName() {
   const popup = document.getElementById("clientInfoPopup");
   if (!popup) return;
 
-  const newName = document.getElementById("clientNameInput").value;
-  if (!newName) {
-    alert("Unesite ime klijenta");
+  const newName = document.getElementById("clientNameInput").value.trim();
+  const newNote = document.getElementById("clientNoteInput").value.trim();
+  const newTime = document.getElementById("clientTimeInput").value.trim();
+
+  if (!newName || !newTime) {
+    alert("Unesite ime i vreme");
     return;
   }
 
@@ -514,11 +528,14 @@ function saveEditedClientName() {
   if (clientData[isoDate] && clientIndex >= 0) {
     clientData[isoDate][clientIndex] = {
       name: newName,
-      time: client.time,
-      note: client.note
+      time: newTime,
+      note: newNote
     };
+    localStorage.setItem("clientData", JSON.stringify(clientData)); // opcionalno
   }
 
   renderClientsForCurrentWeek();
   closeClientInfoPopup();
 }
+
+

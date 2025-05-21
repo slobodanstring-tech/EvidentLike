@@ -669,3 +669,70 @@ body {
   display: none;
 }
 
+.client-entry {
+  white-space: nowrap;        /* Ne dozvoljava novi red */
+  overflow: hidden;           /* Sakriva višak teksta */
+  text-overflow: ellipsis;    /* Dodaje "..." ako ne staje */
+  max-width: 100%;
+}
+
+.flatpickr-input {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+.flatpickr-input {
+  padding: 10px 14px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: 'Roboto', sans-serif;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.flatpickr-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+/* Poboljšaj izgled inputa */
+#clientTime.flatpickr-input {
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: 'Roboto', sans-serif;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #fff;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+#clientTime.flatpickr-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0,123,255,0.2);
+}
+
+/* Ulepšaj popup samog Flatpickr-a */
+.flatpickr-calendar {
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+}
+
+.flatpickr-time {
+  border-top: 1px solid #eee;
+}
+
+.flatpickr-time input {
+  font-size: 16px;
+}
