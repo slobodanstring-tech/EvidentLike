@@ -32,22 +32,29 @@ function updateWeekdayDates(baseDate) {
   renderClientsForCurrentWeek();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   const savedData = localStorage.getItem("clientData");
   if (savedData) {
     Object.assign(clientData, JSON.parse(savedData));
   }
-  const today = new Date();
-  currentDate = today;
-  generateMiniCalendar(today.getFullYear(), today.getMonth());
 
-  const todayBtn = document.getElementById('today-btn');
-  if (todayBtn) {
-    todayBtn.addEventListener('click', () => {
-      const today = new Date();
-      currentDate = today;
-      generateMiniCalendar(today.getFullYear(), today.getMonth());
-    });
+  // Provera da li je trenutna stranica clients.html
+  if (document.getElementById("clientsList")) {
+    renderClientsList();
+  } else {
+    // Postojeći kod za kalendar
+    const today = new Date();
+    currentDate = today;
+    generateMiniCalendar(today.getFullYear(), today.getMonth());
+
+    const todayBtn = document.getElementById("today-btn");
+    if (todayBtn) {
+      todayBtn.addEventListener("click", () => {
+        const today = new Date();
+        currentDate = today;
+        generateMiniCalendar(today.getFullYear(), today.getMonth());
+      });
+    }
   }
 });
 
@@ -211,6 +218,9 @@ function saveClient() {
     clientData[iso].push({ name, time, note });
 
     renderClientsForCurrentWeek(); // ponovo iscrtaj sve
+    if (document.getElementById("clientsList")) {
+      renderClientsList();
+    }
   }
 
   closeModal();
@@ -250,9 +260,12 @@ function deleteClient(popupEl) {
   if (clientData[isoDate] && clientIndex >= 0) {
     clientData[isoDate].splice(clientIndex, 1); // Ukloni klijenta po indeksu
     localStorage.setItem("clientData", JSON.stringify(clientData));
+    renderClientsForCurrentWeek();
+    if (document.getElementById("clientsList")) {
+      renderClientsList();
+    }
   }
 
-  renderClientsForCurrentWeek();
   closeClientInfoPopup();
 }
 
@@ -528,9 +541,12 @@ function markClientCompleted() {
     // Prebaci stanje completed (true -> false ili false -> true)
     clientData[isoDate][clientIndex].completed = !clientData[isoDate][clientIndex].completed;
     localStorage.setItem("clientData", JSON.stringify(clientData));
+    renderClientsForCurrentWeek();
+    if (document.getElementById("clientsList")) {
+      renderClientsList();
+    }
   }
 
-  renderClientsForCurrentWeek();
   closeClientInfoPopup();
 }
 
@@ -558,10 +574,89 @@ function saveEditedClient() {
       note: newNote,
     };
     localStorage.setItem("clientData", JSON.stringify(clientData)); // Sačuvaj u localStorage
+    renderClientsForCurrentWeek();
+    if (document.getElementById("clientsList")) {
+      renderClientsList();
+    }
   }
-
-  renderClientsForCurrentWeek();
   closeClientInfoPopup();
 }
 
+function renderClientsList() {
+  const clientsList = document.getElementById("clientsList");
+  if (!clientsList) return;
 
+  // Prikupljanje svih klijenata iz clientData
+  const allClients = [];
+  for (const [isoDate, clients] of Object.entries(clientData)) {
+    clients.forEach((client, index) => {
+      allClients.push({
+        isoDate,
+        index,
+        ...client,
+      });
+    });
+  }
+
+  // Sortiranje klijenata po datumu i vremenu
+  allClients.sort((a, b) => {
+    const dateA = new Date(a.isoDate);
+    const dateB = new Date(b.isoDate);
+    if (dateA.getTime() !== dateB.getTime()) {
+      return dateA.getTime() - dateB.getTime();
+    }
+    // Ako je datum isti, sortiraj po vremenu
+    const [h1, m1] = a.time.split(":").map(Number);
+    const [h2, m2] = b.time.split(":").map(Number);
+    return h1 * 60 + m1 - (h2 * 60 + m2);
+  });
+
+  // Generisanje liste klijenata
+  clientsList.innerHTML = "";
+  if (allClients.length === 0) {
+    clientsList.innerHTML = "<p>Nema zakazanih klijenata.</p>";
+  } else {
+    allClients.forEach((client) => {
+      const date = new Date(client.isoDate);
+      const formattedDate = `${date.getDate()}. ${[
+        "Januar",
+        "Februar",
+        "Mart",
+        "April",
+        "Maj",
+        "Jun",
+        "Jul",
+        "Avgust",
+        "Septembar",
+        "Oktobar",
+        "Novembar",
+        "Decembar",
+      ][date.getMonth()]
+        } ${date.getFullYear()}`;
+      const div = document.createElement("div");
+      div.classList.add("client-item");
+      if (client.completed) div.classList.add("completed");
+      div.textContent = `${formattedDate} - ${client.time} - ${client.name}`;
+      if (client.note) div.title = client.note;
+
+      // Dodavanje klik događaja za prikaz detalja klijenta
+      div.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showClientInfoPopup(
+          {
+            name: client.name,
+            time: client.time,
+            note: client.note,
+            date: client.isoDate,
+            index: client.index,
+            completed: client.completed,
+          },
+          e.pageX,
+          e.pageY
+        );
+      });
+
+      clientsList.appendChild(div);
+    });
+  }
+}
