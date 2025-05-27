@@ -2,8 +2,6 @@
 
 let currentDate = new Date();
 let selectedCellElement = null;
-let longPressTimer = null;
-let targetClientDiv = null;
 let flatpickrInstance = null;
 const clientData = {}; // ključ: ISO datum, vrednost: niz klijenata
 
@@ -35,6 +33,10 @@ function updateWeekdayDates(baseDate) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  const savedData = localStorage.getItem("clientData");
+  if (savedData) {
+    Object.assign(clientData, JSON.parse(savedData));
+  }
   const today = new Date();
   currentDate = today;
   generateMiniCalendar(today.getFullYear(), today.getMonth());
@@ -47,9 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
       generateMiniCalendar(today.getFullYear(), today.getMonth());
     });
   }
-  document.querySelectorAll(".client-entry").forEach(div => {
-    addLongPressToClientDiv(div);
-  });
 });
 
 
@@ -217,60 +216,6 @@ function saveClient() {
   closeModal();
 }
 
-
-
-function addLongPressToClientDiv(div) {
-  let timer;
-
-  const start = (e) => {
-    console.log("Long press započet na", div);
-    targetClientDiv = div;
-    timer = setTimeout(() => {
-      const x = e.touches ? e.touches[0].pageX : e.pageX;
-      const y = e.touches ? e.touches[0].pageY : e.pageY;
-      console.log("Long press detektovan na", div, "koordinate:", x, y);
-      showDeletePopup(x, y);
-    }, 600);
-  };
-
-  const cancel = () => {
-    console.log("Long press otkazan");
-    clearTimeout(timer);
-  };
-
-  div.addEventListener("mousedown", start);
-  div.addEventListener("touchstart", start, { passive: false });
-
-  div.addEventListener("mouseup", cancel);
-  div.addEventListener("mouseleave", cancel);
-  div.addEventListener("touchend", cancel);
-  div.addEventListener("touchcancel", cancel);
-
-  // 🚫 Sprečava browser kontekst meni (desni klik / long press)
-  div.addEventListener("contextmenu", (e) => e.preventDefault());
-}
-
-function showDeletePopup(x, y) {
-  console.log("Pokušavam da prikažem delete popup na", x, y);
-  let popup = document.getElementById("clientPopup");
-  if (!popup) {
-    console.warn("clientPopup ne postoji, kreiram ga");
-    popup = document.createElement("div");
-    popup.id = "clientPopup";
-    popup.className = "client-popup";
-    popup.innerHTML = `<button onclick="deleteClient(this.parentElement)">Obriši</button>`;
-    document.body.appendChild(popup);
-  }
-  popup.style.top = `${y}px`;
-  popup.style.left = `${x}px`;
-  popup.classList.remove("hidden");
-  console.log("Popup prikazan:", popup);
-}
-
-
-
-
-
 function openDayModal(dayText) {
   document.getElementById("modal-day-title").textContent = dayText;
   document.getElementById("clientName").value = "";
@@ -291,15 +236,6 @@ function openDayModal(dayText) {
   
 }
 
-
-document.addEventListener("mouseup", () => {
-  clearTimeout(longPressTimer);
-});
-
-document.addEventListener("mouseleave", () => {
-  clearTimeout(longPressTimer);
-});
-
 document.addEventListener("click", (e) => {
   const popup = document.getElementById("clientPopup");
   if (popup && !popup.contains(e.target) && e.target !== popup) {
@@ -307,78 +243,39 @@ document.addEventListener("click", (e) => {
   }
 });
 
-function showDeletePopup(x, y) {
-  let popup = document.getElementById("clientPopup");
-  if (!popup) {
-    popup = document.createElement("div");
-    popup.id = "clientPopup";
-    popup.className = "client-popup";
-    popup.innerHTML = `<button onclick="deleteClient(this.parentElement)">Obriši</button>`;
-    document.body.appendChild(popup);
-  }
-  popup.style.top = `${y}px`;
-  popup.style.left = `${x}px`;
-  popup.classList.remove("hidden");
-}
 function deleteClient(popupEl) {
-  if (targetClientDiv && selectedCellElement) {
-    const text = targetClientDiv.textContent;
-    const [time, name] = text.split(" - ");
+  const clientIndex = parseInt(popupEl.dataset.clientIndex);
+  const isoDate = popupEl.dataset.clientDate;
 
-    const label = selectedCellElement.querySelector(".date-label");
-    const parentH3 = selectedCellElement.querySelector("h3");
-    const dayName = parentH3.textContent.split(" ")[0];
-
-    const baseDate = getMonday(currentDate);
-    const weekdays = ["Pon", "Uto", "Sre", "Čet", "Pet", "Sub", "Ned"];
-    const dayIndex = weekdays.indexOf(dayName);
-    const date = new Date(baseDate);
-    date.setDate(baseDate.getDate() + dayIndex);
-    const iso = date.toISOString().split("T")[0];
-
-    if (clientData[iso]) {
-      clientData[iso] = clientData[iso].filter(entry => !(entry.name === name && entry.time === time));
-    }
-
-    renderClientsForCurrentWeek(); // osveži prikaz
-    popupEl.classList.add("hidden");
-    targetClientDiv = null;
+  if (clientData[isoDate] && clientIndex >= 0) {
+    clientData[isoDate].splice(clientIndex, 1); // Ukloni klijenta po indeksu
+    localStorage.setItem("clientData", JSON.stringify(clientData));
   }
+
+  renderClientsForCurrentWeek();
+  closeClientInfoPopup();
 }
 
 
 function renderClientsForCurrentWeek() {
   const baseDate = getMonday(currentDate);
-  console.log("currentDate:", currentDate, "baseDate:", baseDate);
   const dayIds = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
-  console.log("clientData:", clientData);
 
   dayIds.forEach((id, index) => {
     const dayDate = new Date(baseDate);
     dayDate.setDate(baseDate.getDate() + index);
     const iso = dayDate.toISOString().split("T")[0];
-    console.log(`Obrada dana: ${id}, datum: ${iso}`);
 
     const cell = document.getElementById(`date-${id}`)?.closest(".cell");
-    if (!cell) {
-      console.error(`Nema ćelije za date-${id}`);
-      return;
-    }
+    if (!cell) return;
 
     const eventContainer = cell.querySelector(".event");
-    if (!eventContainer) {
-      console.error(`Nema .event kontejnera za date-${id}`);
-      return;
-    }
+    if (!eventContainer) return;
     eventContainer.innerHTML = "";
 
     if (clientData[iso]) {
-      console.log(`Podaci za ${iso}:`, clientData[iso]);
       const sortedClients = clientData[iso].sort((a, b) => {
-        if (!a.time || !b.time || !a.time.includes(":")) {
-          console.error("Neispravan format vremena:", a, b);
-          return 0;
-        }
+        if (!a.time || !b.time || !a.time.includes(":")) return 0;
         const [h1, m1] = a.time.split(":").map(Number);
         const [h2, m2] = b.time.split(":").map(Number);
         return h1 * 60 + m1 - (h2 * 60 + m2);
@@ -387,12 +284,11 @@ function renderClientsForCurrentWeek() {
       sortedClients.forEach((client, clientIndex) => {
         const div = document.createElement("div");
         div.classList.add("client-entry");
+        if (client.completed) div.classList.add("completed"); // Oznaka za završene
         div.textContent = `${client.time} - ${client.name}`;
-        console.log(div, '❗❗❗client is made');
 
         div.addEventListener("click", (e) => {
           e.stopPropagation();
-          console.log('client is clicked ➡️');
           const x = e.pageX;
           const y = e.pageY;
           try {
@@ -404,11 +300,8 @@ function renderClientsForCurrentWeek() {
 
         if (client.note) div.title = client.note;
 
-        addLongPressToClientDiv(div);
         eventContainer.appendChild(div);
       });
-    } else {
-      console.log(`Nema podataka za ${iso}`);
     }
   });
 }
@@ -439,39 +332,47 @@ function showClientInfoPopup(client, x, y) {
     document.body.appendChild(popup);
   }
 
-  // Prosledi date i index za uređivanje
+  const date = new Date(client.date);
+  const formattedDate = `${date.getDate()}. ${[
+    "Januar",
+    "Februar",
+    "Mart",
+    "April",
+    "Maj",
+    "Jun",
+    "Jul",
+    "Avgust",
+    "Septembar",
+    "Oktobar",
+    "Novembar",
+    "Decembar",
+  ][date.getMonth()]} ${date.getFullYear()}`;
+
   popup.dataset.clientData = JSON.stringify(client);
   popup.dataset.clientIndex = client.index;
   popup.dataset.clientDate = client.date;
 
   popup.innerHTML = `
   <div class="md3-dialog__header">
-    <h3 class="md3-dialog__title" id="clientNameTitle" onclick="toggleEditName()">${client.name}</h3>
+    <p class="md3-dialog__date">${formattedDate}</p>
+    <h3 class="md3-dialog__title" id="clientNameTitle">${client.name}</h3>
     <input type="text" id="clientNameInput" value="${client.name}" class="md3-text-field__input hidden" />
   </div>
   <div class="md3-dialog__content">
-    <p><strong>Vreme:</strong></p>
-    <input type="text" id="clientTimeInput" value="${client.time}" class="md3-text-field__input" />
-    
-    <p><strong>Napomena:</strong></p>
-    <textarea id="clientNoteInput" class="md3-text-field__textarea">${client.note || ""}</textarea>
+    <p><strong>Vreme:</strong> <span id="clientTimeDisplay">${client.time}</span></p>
+    <input type="text" id="clientTimeInput" value="${client.time}" class="md3-text-field__input hidden" />
+    <p><strong>Napomena:</strong> <span id="clientNoteDisplay">${client.note || ""}</span></p>
+    <textarea id="clientNoteInput" class="md3-text-field__textarea hidden">${client.note || ""}</textarea>
   </div>
   <div class="md3-dialog__actions">
-    <button class="md3-button md3-button--text" onclick="closeClientInfoPopup()">Zatvori</button>
-    <button class="md3-button md3-button--filled" onclick="saveEditedClientName()">Sačuvaj</button>
+    <button class="md3-button md3-button--text" onclick="event.stopPropagation(); markClientCompleted()">Završeno</button>
+    <button class="md3-button md3-button--text" onclick="event.stopPropagation(); toggleEditMode()">Izmeniti</button>
+    <button class="md3-button md3-button--text" onclick="event.stopPropagation(); deleteClient(this.parentElement.parentElement)">Obriši</button>
   </div>
 `;
-  flatpickr("#clientTimeInput", {
-    enableTime: true,
-    noCalendar: true,
-    dateFormat: "H:i",
-    time_24hr: true,
-    minuteIncrement: 5
-  });
 
+  popup.dataset.flatpickrInitialized = "false";
 
-
-  // Postavi poziciju i proveri granice ekrana
   const popupWidth = 280;
   const popupHeight = popup.offsetHeight || 200;
   const viewportWidth = window.innerWidth;
@@ -489,6 +390,17 @@ function showClientInfoPopup(client, x, y) {
   popup.style.left = `${adjustedX}px`;
   popup.style.top = `${adjustedY}px`;
   popup.classList.remove("hidden");
+
+  const handleOutsideClick = (e) => {
+    if (!popup.contains(e.target) && e.target !== popup) {
+      closeClientInfoPopup();
+      document.removeEventListener("click", handleOutsideClick);
+    }
+  };
+
+  setTimeout(() => {
+    document.addEventListener("click", handleOutsideClick);
+  }, 0);
 }
 
 function closeClientInfoPopup() {
@@ -532,6 +444,117 @@ function saveEditedClientName() {
       note: newNote
     };
     localStorage.setItem("clientData", JSON.stringify(clientData)); // opcionalno
+  }
+
+  renderClientsForCurrentWeek();
+  closeClientInfoPopup();
+}
+
+function toggleEditMode() {
+  console.log("toggleEditMode pozvana");
+  const popup = document.getElementById("clientInfoPopup");
+  if (!popup) {
+    console.error("Greška: clientInfoPopup nije pronađen");
+    return;
+  }
+
+  const nameTitle = document.getElementById("clientNameTitle");
+  const nameInput = document.getElementById("clientNameInput");
+  const timeDisplay = document.getElementById("clientTimeDisplay");
+  const timeInput = document.getElementById("clientTimeInput");
+  const noteDisplay = document.getElementById("clientNoteDisplay");
+  const noteInput = document.getElementById("clientNoteInput");
+  const actions = popup.querySelector(".md3-dialog__actions");
+
+  const elements = { nameTitle, nameInput, timeDisplay, timeInput, noteDisplay, noteInput, actions };
+  for (const [key, value] of Object.entries(elements)) {
+    if (!value) {
+      console.error(`Greška: ${key} nije pronađen`);
+      return;
+    }
+  }
+
+  console.log("Pre toglovanja - nameInput hidden:", nameInput.classList.contains("hidden"));
+  nameTitle.classList.toggle("hidden");
+  nameInput.classList.toggle("hidden");
+  timeDisplay.classList.toggle("hidden");
+  timeInput.classList.toggle("hidden");
+  noteDisplay.classList.toggle("hidden");
+  noteInput.classList.toggle("hidden");
+  console.log("Posle toglovanja - nameInput hidden:", nameInput.classList.contains("hidden"));
+
+  if (!nameInput.classList.contains("hidden")) {
+    console.log("Ušao u režim uređivanja");
+    actions.innerHTML = `
+      <button class="md3-button md3-button--text" onclick="event.stopPropagation(); closeClientInfoPopup()">Otkaži</button>
+      <button class="md3-button md3-button--filled" onclick="event.stopPropagation(); saveEditedClient()">Sačuvaj</button>
+    `;
+    if (popup.dataset.flatpickrInitialized === "false") {
+      console.log("Inicijalizujem Flatpickr za clientTimeInput");
+      try {
+        flatpickr("#clientTimeInput", {
+          enableTime: true,
+          noCalendar: true,
+          dateFormat: "H:i",
+          time_24hr: true,
+          minuteIncrement: 5,
+        });
+        popup.dataset.flatpickrInitialized = "true";
+      } catch (error) {
+        console.error("Greška pri inicijalizaciji Flatpickr-a:", error);
+      }
+    }
+    nameInput.focus();
+  } else {
+    console.log("Vratio se u prikazni režim");
+    actions.innerHTML = `
+      <button class="md3-button md3-button--text" onclick="event.stopPropagation(); markClientCompleted()">Završeno</button>
+      <button class="md3-button md3-button--text" onclick="event.stopPropagation(); toggleEditMode()">Izmeniti</button>
+      <button class="md3-button md3-button--text" onclick="event.stopPropagation(); deleteClient(this.parentElement.parentElement)">Obriši</button>
+    `;
+  }
+}
+
+function markClientCompleted() {
+  const popup = document.getElementById("clientInfoPopup");
+  if (!popup) return;
+
+  const clientIndex = parseInt(popup.dataset.clientIndex);
+  const isoDate = popup.dataset.clientDate;
+
+  if (clientData[isoDate] && clientIndex >= 0) {
+    clientData[isoDate][clientIndex].completed = true;
+    localStorage.setItem("clientData", JSON.stringify(clientData));
+  }
+
+  renderClientsForCurrentWeek();
+  closeClientInfoPopup();
+}
+
+function saveEditedClient() {
+  const popup = document.getElementById("clientInfoPopup");
+  if (!popup) return;
+
+  const newName = document.getElementById("clientNameInput").value.trim();
+  const newTime = document.getElementById("clientTimeInput").value.trim();
+  const newNote = document.getElementById("clientNoteInput").value.trim();
+
+  if (!newName || !newTime) {
+    alert("Unesite ime i vreme");
+    return;
+  }
+
+  const clientIndex = parseInt(popup.dataset.clientIndex);
+  const isoDate = popup.dataset.clientDate;
+
+  if (clientData[isoDate] && clientIndex >= 0) {
+    clientData[isoDate][clientIndex] = {
+      ...clientData[isoDate][clientIndex],
+      name: newName,
+      time: newTime,
+      note: newNote,
+    };
+    localStorage.setItem("clientData", JSON.stringify(clientData)); // Sačuvaj u localStorage
   }
 
   renderClientsForCurrentWeek();
