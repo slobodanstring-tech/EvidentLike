@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evident App - Lista klijenata</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="top-bar">
+    <a href="/" class="back-btn"><i class="fas fa-arrow-left"></i> Nazad</a>
+    <h2>Lista klijenata</h2>
+  </div>
+  <div class="clients-list" id="clientsList"></div>
+  <div class="bottom-bar">
+    <div class="nav-item">
+      <a href="/"><i class="fas fa-calendar-alt"></i> Kalendar</a>
+    </div>
+    <div class="nav-item active">
+      <i class="fas fa-user-friends active"></i>
+      <span>Klijenti</span>
+    </div>
+    <div class="nav-item">
+      <i class="fas fa-wallet"></i>
+      <span>Troškovi</span>
+    </div>
+  </div>
+  <div class="modal hidden" id="clientInfoPopup"></div>
+  <script src="/js/main.js"></script>
+</body>
+</html>

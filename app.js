@@ -15,6 +15,11 @@ app.get('/', (req, res) => {
   res.render('index');
 });
 
+// Ruta za listu klijenata
+app.get('/clients', (req, res) => {
+  res.render('clients');
+});
+
 // Pokretanje servera
 const port = 3000;
 app.listen(port, () => {
