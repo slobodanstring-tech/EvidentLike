@@ -365,7 +365,9 @@ function showClientInfoPopup(client, x, y) {
     <textarea id="clientNoteInput" class="md3-text-field__textarea hidden">${client.note || ""}</textarea>
   </div>
   <div class="md3-dialog__actions">
-    <button class="md3-button md3-button--text" onclick="event.stopPropagation(); markClientCompleted()">Završeno</button>
+    <button class="md3-button md3-button--text" onclick="event.stopPropagation(); markClientCompleted()">
+      ${client.completed ? "Vrati u zakazano" : "Završeno"}
+    </button>
     <button class="md3-button md3-button--text" onclick="event.stopPropagation(); toggleEditMode()">Izmeniti</button>
     <button class="md3-button md3-button--text" onclick="event.stopPropagation(); deleteClient(this.parentElement.parentElement)">Obriši</button>
   </div>
@@ -523,7 +525,8 @@ function markClientCompleted() {
   const isoDate = popup.dataset.clientDate;
 
   if (clientData[isoDate] && clientIndex >= 0) {
-    clientData[isoDate][clientIndex].completed = true;
+    // Prebaci stanje completed (true -> false ili false -> true)
+    clientData[isoDate][clientIndex].completed = !clientData[isoDate][clientIndex].completed;
     localStorage.setItem("clientData", JSON.stringify(clientData));
   }
 
