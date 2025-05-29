@@ -47,8 +47,18 @@ body {
 }
 
 .cell .date-label {
-  font-size: 0.6rem;
-  color: #999;
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.right-top{
+  display: flex;
+  gap:1rem;
+  align-items:center;
+}
+
+.right-top a{
+  padding-top: .3rem;
 }
 
 .prev-month,
@@ -273,11 +283,7 @@ body {
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
   background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
   z-index: 1000;
 }
 
@@ -831,7 +837,7 @@ body {
 
 .top-bar h2 {
   margin: 0;
-  font-size: 1.5em;
+  font-size: 1em;
 }
 
 .back-btn {
