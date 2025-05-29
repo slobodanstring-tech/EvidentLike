@@ -35,14 +35,27 @@ function updateWeekdayDates(baseDate) {
 document.addEventListener("DOMContentLoaded", () => {
   const savedData = localStorage.getItem("clientData");
   if (savedData) {
-    Object.assign(clientData, JSON.parse(savedData));
+    try {
+      const parsedData = JSON.parse(savedData);
+      for (const iso in parsedData) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+          console.warn("Invalid ISO date in clientData:", iso);
+          delete parsedData[iso];
+        }
+      }
+      Object.assign(clientData, parsedData);
+      console.log("Loaded clientData from localStorage:", clientData);
+    } catch (error) {
+      console.error("Error parsing clientData from localStorage:", error);
+      localStorage.removeItem("clientData");
+    }
+  } else {
+    console.log("No clientData in localStorage");
   }
 
-  // Provera da li je trenutna stranica clients.html
   if (document.getElementById("clientsList")) {
     renderClientsList();
   } else {
-    // Postojeći kod za kalendar
     const today = new Date();
     currentDate = today;
     generateMiniCalendar(today.getFullYear(), today.getMonth());
@@ -197,6 +210,7 @@ function saveClient() {
   const note = document.getElementById("clientNote").value;
 
   if (!name || !time) {
+    console.log("Validation failed: Missing name or time");
     alert("Unesite ime i vreme");
     return;
   }
@@ -212,15 +226,35 @@ function saveClient() {
     const dayIndex = weekdays.indexOf(dayName);
     const date = new Date(baseDate);
     date.setDate(baseDate.getDate() + dayIndex);
+    date.setHours(0, 0, 0, 0); // Osiguraj ponoć
     const iso = date.toISOString().split("T")[0];
 
-    if (!clientData[iso]) clientData[iso] = [];
-    clientData[iso].push({ name, time, note });
+    console.log("Saving client for date:", iso, "Client:", { name, time, note });
+    console.log("Current date:", currentDate, "Base date:", baseDate);
 
-    renderClientsForCurrentWeek(); // ponovo iscrtaj sve
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+      console.error("Invalid ISO date:", iso);
+      alert("Greška pri čuvanju klijenta: nevažeći datum.");
+      return;
+    }
+
+    if (!clientData[iso]) clientData[iso] = [];
+    clientData[iso].push({ name, time, note, completed: false });
+
+    try {
+      localStorage.setItem("clientData", JSON.stringify(clientData));
+      console.log("Saved clientData to localStorage:", JSON.stringify(clientData));
+    } catch (error) {
+      console.error("Error saving to localStorage:", error);
+      alert("Greška pri čuvanju podataka.");
+    }
+
+    renderClientsForCurrentWeek();
     if (document.getElementById("clientsList")) {
       renderClientsList();
     }
+  } else {
+    console.error("No selected cell element");
   }
 
   closeModal();
@@ -272,21 +306,31 @@ function deleteClient(popupEl) {
 
 function renderClientsForCurrentWeek() {
   const baseDate = getMonday(currentDate);
+  console.log("Base date for week:", baseDate.toISOString());
   const dayIds = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
   dayIds.forEach((id, index) => {
     const dayDate = new Date(baseDate);
     dayDate.setDate(baseDate.getDate() + index);
+    dayDate.setHours(0, 0, 0, 0);
     const iso = dayDate.toISOString().split("T")[0];
+    console.log(`Rendering clients for ${id} (${iso})`);
 
     const cell = document.getElementById(`date-${id}`)?.closest(".cell");
-    if (!cell) return;
+    if (!cell) {
+      console.warn(`Cell for ${id} not found`);
+      return;
+    }
 
     const eventContainer = cell.querySelector(".event");
-    if (!eventContainer) return;
+    if (!eventContainer) {
+      console.warn(`Event container for ${id} not found`);
+      return;
+    }
     eventContainer.innerHTML = "";
 
     if (clientData[iso]) {
+      console.log(`Clients for ${iso}:`, clientData[iso]);
       const sortedClients = clientData[iso].sort((a, b) => {
         if (!a.time || !b.time || !a.time.includes(":")) return 0;
         const [h1, m1] = a.time.split(":").map(Number);
@@ -297,7 +341,7 @@ function renderClientsForCurrentWeek() {
       sortedClients.forEach((client, clientIndex) => {
         const div = document.createElement("div");
         div.classList.add("client-entry");
-        if (client.completed) div.classList.add("completed"); // Oznaka za završene
+        if (client.completed) div.classList.add("completed");
         div.textContent = `${client.time} - ${client.name}`;
 
         div.addEventListener("click", (e) => {
@@ -607,7 +651,8 @@ function renderClientsList() {
   const clientsList = document.getElementById("clientsList");
   if (!clientsList) return;
 
-  // Prikupljanje svih klijenata iz clientData
+  console.log("Rendering clients list, clientData:", JSON.stringify(clientData));
+
   const allClients = [];
   for (const [isoDate, clients] of Object.entries(clientData)) {
     clients.forEach((client, index) => {
@@ -619,23 +664,21 @@ function renderClientsList() {
     });
   }
 
-  // Sortiranje klijenata po datumu i vremenu
   allClients.sort((a, b) => {
     const dateA = new Date(a.isoDate);
     const dateB = new Date(b.isoDate);
     if (dateA.getTime() !== dateB.getTime()) {
       return dateA.getTime() - dateB.getTime();
     }
-    // Ako je datum isti, sortiraj po vremenu
     const [h1, m1] = a.time.split(":").map(Number);
     const [h2, m2] = b.time.split(":").map(Number);
     return h1 * 60 + m1 - (h2 * 60 + m2);
   });
 
-  // Generisanje liste klijenata
   clientsList.innerHTML = "";
   if (allClients.length === 0) {
     clientsList.innerHTML = "<p>Nema zakazanih klijenata.</p>";
+    console.log("No clients to display");
   } else {
     allClients.forEach((client) => {
       const date = new Date(client.isoDate);
@@ -652,15 +695,13 @@ function renderClientsList() {
         "Oktobar",
         "Novembar",
         "Decembar",
-      ][date.getMonth()]
-        } ${date.getFullYear()}`;
+      ][date.getMonth()]} ${date.getFullYear()}`;
       const div = document.createElement("div");
       div.classList.add("client-item");
       if (client.completed) div.classList.add("completed");
       div.textContent = `${formattedDate} - ${client.time} - ${client.name}`;
       if (client.note) div.title = client.note;
 
-      // Dodavanje klik događaja za prikaz detalja klijenta
       div.addEventListener("click", (e) => {
         e.stopPropagation();
         showClientInfoPopup(
