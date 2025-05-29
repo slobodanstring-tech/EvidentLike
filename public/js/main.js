@@ -336,55 +336,67 @@ function closeClientInfoPopup() {
 }
 
 function showClientInfoPopup(client, x, y) {
+  console.log("Podaci o klijentu:", client);
   let popup = document.getElementById("clientInfoPopup");
 
   if (!popup) {
     popup = document.createElement("div");
     popup.id = "clientInfoPopup";
-    popup.className = "client-info-popup md3-dialog";
     document.body.appendChild(popup);
+  }
+
+  // Uvek osiguraj da popup ima potrebne klase
+  popup.classList.add("client-info-popup", "md3-dialog");
+
+  // Proveri da li su klase prisutne
+  console.log("Klase popup-a:", popup.className);
+
+  if (!client || !client.name || !client.time || !client.date) {
+    console.error("Nepotpuni podaci o klijentu:", client);
+    return;
   }
 
   const date = new Date(client.date);
   const formattedDate = `${date.getDate()}. ${[
-    "Januar",
-    "Februar",
-    "Mart",
-    "April",
-    "Maj",
-    "Jun",
-    "Jul",
-    "Avgust",
-    "Septembar",
-    "Oktobar",
-    "Novembar",
-    "Decembar",
-  ][date.getMonth()]} ${date.getFullYear()}`;
+      "Januar",
+      "Februar",
+      "Mart",
+      "April",
+      "Maj",
+      "Jun",
+      "Jul",
+      "Avgust",
+      "Septembar",
+      "Oktobar",
+      "Novembar",
+      "Decembar",
+    ][date.getMonth()]
+    } ${date.getFullYear()}`;
 
   popup.dataset.clientData = JSON.stringify(client);
   popup.dataset.clientIndex = client.index;
   popup.dataset.clientDate = client.date;
 
   popup.innerHTML = `
-  <div class="md3-dialog__header">
-    <p class="md3-dialog__date">${formattedDate}</p>
-    <h3 class="md3-dialog__title" id="clientNameTitle">${client.name}</h3>
-    <input type="text" id="clientNameInput" value="${client.name}" class="md3-text-field__input hidden" />
-  </div>
-  <div class="md3-dialog__content">
-    <p><strong>Vreme:</strong> <span id="clientTimeDisplay">${client.time}</span></p>
-    <input type="text" id="clientTimeInput" value="${client.time}" class="md3-text-field__input hidden" />
-    <p><strong>Napomena:</strong> <span id="clientNoteDisplay">${client.note || ""}</span></p>
-    <textarea id="clientNoteInput" class="md3-text-field__textarea hidden">${client.note || ""}</textarea>
-  </div>
-  <div class="md3-dialog__actions">
-    <button class="md3-button md3-button--text" onclick="event.stopPropagation(); markClientCompleted()">
-      ${client.completed ? "Vrati u zakazano" : "Završeno"}
-    </button>
-    <button class="md3-button md3-button--text" onclick="event.stopPropagation(); toggleEditMode()">Izmeniti</button>
-    <button class="md3-button md3-button--text" onclick="event.stopPropagation(); deleteClient(this.parentElement.parentElement)">Obriši</button>
-  </div>
-`;
+    <div class="md3-dialog__header">
+      <p class="md3-dialog__date">${formattedDate}</p>
+      <h3 class="md3-dialog__title" id="clientNameTitle">${client.name || "Nepoznato ime"}</h3>
+      <input type="text" id="clientNameInput" value="${client.name || ""}" class="md3-text-field__input hidden" />
+    </div>
+    <div class="md3-dialog__content">
+      <p><strong>Vreme:</strong> <span id="clientTimeDisplay">${client.time || "Nema vremena"}</span></p>
+      <input type="text" id="clientTimeInput" value="${client.time || ""}" class="md3-text-field__input hidden" />
+      <p><strong>Napomena:</strong> <span id="clientNoteDisplay">${client.note || ""}</span></p>
+      <textarea id="clientNoteInput" class="md3-text-field__textarea hidden">${client.note || ""}</textarea>
+    </div>
+    <div class="md3-dialog__actions">
+      <button class="md3-button md3-button--text" onclick="event.stopPropagation(); markClientCompleted()">
+        ${client.completed ? "Vrati u zakazano" : "Završeno"}
+      </button>
+      <button class="md3-button md3-button--text" onclick="event.stopPropagation(); toggleEditMode()">Izmeniti</button>
+      <button class="md3-button md3-button--text" onclick="event.stopPropagation(); deleteClient(this.parentElement.parentElement)">Obriši</button>
+    </div>
+  `;
 
   popup.dataset.flatpickrInitialized = "false";
 
@@ -392,19 +404,28 @@ function showClientInfoPopup(client, x, y) {
   const popupHeight = popup.offsetHeight || 200;
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
+  const scrollX = window.scrollX || window.pageXOffset;
+  const scrollY = window.scrollY || window.pageYOffset;
 
-  let adjustedX = x;
-  let adjustedY = y;
-  if (x + popupWidth > viewportWidth) {
-    adjustedX = viewportWidth - popupWidth - 8;
+  let adjustedX = x + scrollX;
+  let adjustedY = y + scrollY;
+
+  if (adjustedX + popupWidth > viewportWidth + scrollX) {
+    adjustedX = viewportWidth + scrollX - popupWidth - 8;
   }
-  if (y + popupHeight > viewportHeight) {
-    adjustedY = viewportHeight - popupHeight - 8;
+  if (adjustedY + popupHeight > viewportHeight + scrollY) {
+    adjustedY = viewportHeight + scrollY - popupHeight - 8;
   }
+  if (adjustedX < scrollX) adjustedX = scrollX + 8;
+  if (adjustedY < scrollY) adjustedY = scrollY + 8;
 
   popup.style.left = `${adjustedX}px`;
   popup.style.top = `${adjustedY}px`;
+  popup.style.position = "fixed";
   popup.classList.remove("hidden");
+
+  console.log("Popup HTML:", popup.innerHTML);
+  console.log("Popup pozicija:", { left: adjustedX, top: adjustedY });
 
   const handleOutsideClick = (e) => {
     if (!popup.contains(e.target) && e.target !== popup) {
