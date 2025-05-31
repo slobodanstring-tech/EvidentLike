@@ -55,6 +55,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (document.getElementById("clientsList")) {
     renderClientsList();
+    // Dodaj event listener za today-btn na stranici sa listom
+    const todayBtn = document.getElementById("today-btn");
+    if (todayBtn) {
+      todayBtn.addEventListener("click", () => {
+        const todayHeader = document.getElementById("today-header");
+        if (todayHeader) {
+          todayHeader.scrollIntoView({ behavior: "smooth", block: "start" });
+          // Prisilno osveži skrolbar
+          const clientsList = document.getElementById("clientsList");
+          clientsList.style.height = clientsList.offsetHeight + 'px';
+          clientsList.style.height = 'auto';
+        }
+      });
+    }
   } else {
     const today = new Date();
     currentDate = today;
@@ -76,9 +90,11 @@ function generateMiniCalendar(year, month) {
   const daysContainer = document.getElementById('calendar-days');
   if (!daysContainer) return;
 
+  console.log("Generisanje kalendara za godinu:", year, "mesec:", month);
+
   daysContainer.innerHTML = '';
   const firstDay = new Date(year, month, 1);
-  const startDay = (firstDay.getDay() + 6) % 7;
+  const startDay = (firstDay.getDay() + 6) % 7; // Ponedeljak kao prvi dan
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const daysInPrevMonth = new Date(year, month, 0).getDate();
 
@@ -102,6 +118,7 @@ function generateMiniCalendar(year, month) {
     day.dataset.fullDate = date.toISOString().split('T')[0];
 
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     if (
       d === today.getDate() &&
       month === today.getMonth() &&
@@ -135,24 +152,17 @@ function generateMiniCalendar(year, month) {
   allDays.forEach(day => {
     day.addEventListener('click', () => {
       const clickedDate = new Date(day.dataset.fullDate);
+      clickedDate.setHours(0, 0, 0, 0);
       currentDate = clickedDate;
+      console.log("Klik na dan, currentDate:", currentDate.toISOString());
       updateWeekdayDates(clickedDate);
       highlightWeekInCalendar(clickedDate);
     });
   });
 
-  // Po defaultu selektuj today ili prvu nedelju ako nije isti mesec
-  const today = new Date();
-  if (today.getMonth() === month && today.getFullYear() === year) {
-    currentDate = today;
-    updateWeekdayDates(today);
-    highlightWeekInCalendar(today);
-  } else {
-    const firstOfMonth = new Date(year, month, 1);
-    currentDate = firstOfMonth;
-    updateWeekdayDates(firstOfMonth);
-    highlightWeekInCalendar(firstOfMonth);
-  }
+  // Ažuriraj nedelju na osnovu trenutnog currentDate
+  updateWeekdayDates(currentDate);
+  highlightWeekInCalendar(currentDate);
 }
 
 function highlightWeekInCalendar(referenceDate) {
@@ -177,18 +187,27 @@ const nextBtn = document.getElementById('next-month');
 
 if (prevBtn) {
   prevBtn.addEventListener('click', () => {
-    currentDate.setMonth(currentDate.getMonth() - 1);
+    console.log("Prethodni mesec, currentDate pre:", currentDate.toISOString());
+    const newDate = new Date(currentDate);
+    newDate.setDate(1); // Postavi dan na 1
+    newDate.setMonth(newDate.getMonth() - 1);
+    currentDate = newDate;
+    console.log("Prethodni mesec, currentDate posle:", currentDate.toISOString());
     generateMiniCalendar(currentDate.getFullYear(), currentDate.getMonth());
   });
 }
 
 if (nextBtn) {
   nextBtn.addEventListener('click', () => {
-    currentDate.setMonth(currentDate.getMonth() + 1);
+    console.log("Sledeći mesec, currentDate pre:", currentDate.toISOString());
+    const newDate = new Date(currentDate);
+    newDate.setDate(1); // Postavi dan na 1
+    newDate.setMonth(newDate.getMonth() + 1);
+    currentDate = newDate;
+    console.log("Sledeći mesec, currentDate posle:", currentDate.toISOString());
     generateMiniCalendar(currentDate.getFullYear(), currentDate.getMonth());
   });
 }
-
 document.querySelectorAll(".grid .cell").forEach(cell => {
   const title = cell.querySelector("h3");
   if (title) {
@@ -309,8 +328,9 @@ function deleteClient(popupEl) {
 
 
 function renderClientsForCurrentWeek() {
+  console.log("Pokrećem renderClientsForCurrentWeek, currentDate:", currentDate.toISOString());
   const baseDate = getMonday(currentDate);
-  console.log("Base date for week:", baseDate.toLocaleDateString("en-CA")); // Koristi lokalni format, npr. 2025-05-26
+  console.log("Base date for week:", baseDate.toISOString());
   const dayIds = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
   dayIds.forEach((id, index) => {
@@ -370,11 +390,11 @@ function renderClientsForCurrentWeek() {
 // Primer ispravne getMonday funkcije
 function getMonday(date) {
   const d = new Date(date);
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
+  d.setHours(0, 0, 0, 0); // Postavi na ponoć
+  const day = d.getDay(); // 0 (nedelja) do 6 (subota)
+  const diff = day === 0 ? -6 : 1 - day; // Pomeraj do ponedeljka
   d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
-  console.log("getMonday input:", date, "output:", d);
+  console.log("getMonday input:", date.toISOString(), "output:", d.toISOString());
   return d;
 }
 
@@ -738,20 +758,18 @@ function renderClientsList() {
   if (!clientsList) return;
 
   console.log("Rendering clients list, clientData:", JSON.stringify(clientData));
+  console.log("All dates in clientData:", Object.keys(clientData));
 
-  // Grupisanje klijenata po mesecu
-  const clientsByMonth = {};
+  // Današnji datum
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  // Priprema svih klijenata za sortiranje
+  const allClients = [];
   for (const [isoDate, clients] of Object.entries(clientData)) {
-    const [year, month, day] = isoDate.split("-").map(Number);
-    const date = new Date(year, month - 1, day);
-    date.setHours(0, 0, 0, 0); // Osiguraj ponoć u lokalnoj zoni
-    console.log(`Processing isoDate: ${isoDate}, parsed date: ${date.toLocaleDateString("en-CA")}`);
-    const yearMonth = `${date.getFullYear()}-${date.getMonth()}`; // npr. "2025-5"
-    if (!clientsByMonth[yearMonth]) {
-      clientsByMonth[yearMonth] = [];
-    }
     clients.forEach((client, index) => {
-      clientsByMonth[yearMonth].push({
+      allClients.push({
         isoDate,
         index,
         ...client,
@@ -759,46 +777,23 @@ function renderClientsList() {
     });
   }
 
-  // Današnji datum
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // Osiguraj ponoć u lokalnoj zoni
-  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`; // Ručno kreiraj ISO format
-  const todayYearMonth = `${today.getFullYear()}-${today.getMonth()}`; // npr. "2025-5"
-  const hasClientsToday = clientData[todayIso] && clientData[todayIso].length > 0;
-
-  console.log("Today ISO:", todayIso, "Has clients today:", hasClientsToday);
-
-  // Ako nema klijenata za danas, dodaj prazan unos za danas
-  if (!hasClientsToday) {
-    if (!clientsByMonth[todayYearMonth]) {
-      clientsByMonth[todayYearMonth] = [];
+  // Sortiranje klijenata hronološki po datumu i vremenu
+  allClients.sort((a, b) => {
+    const dateA = new Date(a.isoDate);
+    const dateB = new Date(b.isoDate);
+    dateA.setHours(0, 0, 0, 0);
+    dateB.setHours(0, 0, 0, 0);
+    if (dateA.getTime() !== dateB.getTime()) {
+      return dateA.getTime() - dateB.getTime();
     }
-    clientsByMonth[todayYearMonth].push({
-      isoDate: todayIso,
-      index: -1,
-      name: "Nema zakazanih klijenata",
-      time: "",
-      note: "",
-      completed: false,
-      isTodayPlaceholder: true,
-    });
-  }
-
-  // Sortiranje meseci hronološki
-  const sortedYearMonths = Object.keys(clientsByMonth).sort((a, b) => {
-    const [yearA, monthA] = a.split("-").map(Number);
-    const [yearB, monthB] = b.split("-").map(Number);
-    return yearA * 12 + monthA - (yearB * 12 + monthB);
+    if (!a.time || !b.time || !a.time.includes(":")) return 0;
+    const [h1, m1] = a.time.split(":").map(Number);
+    const [h2, m2] = b.time.split(":").map(Number);
+    return h1 * 60 + m1 - (h2 * 60 + m2);
   });
 
   clientsList.innerHTML = "";
-  if (sortedYearMonths.length === 0) {
-    clientsList.innerHTML = "<p>Nema zakazanih klijenata.</p>";
-    console.log("No clients to display");
-    return;
-  }
 
-  // Generisanje liste po mesecima
   const monthNames = [
     "Januar",
     "Februar",
@@ -814,86 +809,75 @@ function renderClientsList() {
     "Decembar",
   ];
 
-  sortedYearMonths.forEach((yearMonth) => {
-    const [year, month] = yearMonth.split("-").map(Number);
-    const monthHeader = document.createElement("h2");
-    monthHeader.classList.add("month-header");
-    monthHeader.textContent = `${monthNames[month]} ${year}`;
-    clientsList.appendChild(monthHeader);
+  // Prikaz svih klijenata hronološki
+  let lastDate = null;
+  allClients.forEach(client => {
+    const date = new Date(client.isoDate);
+    date.setHours(0, 0, 0, 0);
+    const isToday = client.isoDate === todayIso;
+    const formattedDate = isToday
+      ? `Danas, ${date.getDate()}. ${monthNames[date.getMonth()]} ${date.getFullYear()}`
+      : `${date.getDate()}. ${monthNames[date.getMonth()]} ${date.getFullYear()}`;
 
-    // Sortiranje klijenata unutar meseca po datumu i vremenu
-    const sortedClients = clientsByMonth[yearMonth].sort((a, b) => {
-      const [yA, mA, dA] = a.isoDate.split("-").map(Number);
-      const [yB, mB, dB] = b.isoDate.split("-").map(Number);
-      const dateA = new Date(yA, mA - 1, dA);
-      dateA.setHours(0, 0, 0, 0); // Osiguraj ponoć u lokalnoj zoni
-      const dateB = new Date(yB, mB - 1, dB);
-      dateB.setHours(0, 0, 0, 0); // Osiguraj ponoć u lokalnoj zoni
-      if (dateA.getTime() !== dateB.getTime()) {
-        return dateA.getTime() - dateB.getTime();
+    // Dodaj zaglavlje za novi datum ako je drugačiji od prethodnog
+    if (!lastDate || lastDate !== client.isoDate) {
+      const header = document.createElement("h2");
+      header.classList.add("month-header");
+      if (isToday) {
+        header.id = "today-header"; // ID za skrolovanje
+        header.classList.add("today-header");
       }
-      if (a.isTodayPlaceholder || b.isTodayPlaceholder) return 0;
-      const [h1, m1] = a.time.split(":").map(Number);
-      const [h2, m2] = b.time.split(":").map(Number);
-      return h1 * 60 + m1 - (h2 * 60 + m2);
-    });
+      header.textContent = formattedDate;
+      clientsList.appendChild(header);
+      lastDate = client.isoDate;
+    }
 
-    // Grupisanje današnjih unosa tokom renderovanja
-    let todayGroup = null;
-    sortedClients.forEach((client) => {
-      const [year, month, day] = client.isoDate.split("-").map(Number);
-      const date = new Date(year, month - 1, day);
-      date.setHours(0, 0, 0, 0); // Osiguraj ponoć u lokalnoj zoni
-      console.log(
-        `Rendering client: ${client.name}, isoDate: ${client.isoDate}, formatted date: ${date.toLocaleDateString("en-CA")}`
+    // Dodaj klijenta
+    const div = document.createElement("div");
+    div.classList.add("client-item");
+    if (isToday) div.classList.add("today-client");
+    else if (date < today) div.classList.add("past-client");
+    else div.classList.add("future-client");
+    if (client.completed) div.classList.add("completed");
+
+    div.textContent = isToday
+      ? `${client.time} - ${client.name}`
+      : `${formattedDate} - ${client.time} - ${client.name}`;
+    if (client.note) div.title = client.note;
+
+    div.addEventListener("click", (e) => {
+      e.stopPropagation();
+      showClientInfoPopup(
+        {
+          name: client.name,
+          time: client.time,
+          note: client.note,
+          date: client.isoDate,
+          index: client.index,
+          completed: client.completed,
+        },
+        e.pageX,
+        e.pageY
       );
-      const formattedDate = `${date.getDate()}. ${monthNames[date.getMonth()]} ${date.getFullYear()}`;
-
-      const div = document.createElement("div");
-      div.classList.add("client-item");
-      if (client.completed) div.classList.add("completed");
-      if (client.isoDate === todayIso) div.classList.add("today-client");
-
-      if (client.isTodayPlaceholder) {
-        div.textContent = `Danas: ${client.name}`;
-      } else {
-        div.textContent = `${formattedDate} - ${client.time} - ${client.name}`;
-      }
-      if (client.note) div.title = client.note;
-
-      if (!client.isTodayPlaceholder) {
-        div.addEventListener("click", (e) => {
-          e.stopPropagation();
-          showClientInfoPopup(
-            {
-              name: client.name,
-              time: client.time,
-              note: client.note,
-              date: client.isoDate,
-              index: client.index,
-              completed: client.completed,
-            },
-            e.pageX,
-            e.pageY
-          );
-        });
-      }
-
-      // Ako je današnji unos, dodaj u todayGroup
-      if (client.isoDate === todayIso) {
-        if (!todayGroup) {
-          todayGroup = document.createElement("div");
-          todayGroup.classList.add("today-group");
-          clientsList.appendChild(todayGroup);
-        }
-        todayGroup.appendChild(div);
-      } else {
-        if (todayGroup) {
-          todayGroup = null;
-        }
-        clientsList.appendChild(div);
-      }
     });
+
+    clientsList.appendChild(div);
   });
+
+  if (allClients.length === 0) {
+    clientsList.innerHTML = "<p>Nema zakazanih klijenata.</p>";
+    console.log("No clients to display");
+  }
+
+  // Pozicioniraj skrol na sekciju "Danas"
+  setTimeout(() => {
+    const todayHeader = document.getElementById("today-header");
+    if (todayHeader) {
+      todayHeader.scrollIntoView({ behavior: "auto", block: "start" });
+    }
+    // Prisilno osveži skrolbar
+    clientsList.style.height = clientsList.offsetHeight + 'px';
+    clientsList.style.height = 'auto';
+  }, 10);
 }
 
