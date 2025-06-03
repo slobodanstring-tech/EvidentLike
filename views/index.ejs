@@ -96,12 +96,18 @@
 		</div>
 		<div class="modal hidden" id="dayModal">
 			<div class="modal-content">
-				<h3 id="modal-day-title"></h3>
+				<div class="modal-header">
+					<h3 id="modal-day-title"></h3>
+					<span class="close-icon" onclick="closeModal()">
+						<i class="fas fa-times"></i>
+					</span>
+				</div>
 				<input type="text" id="clientName" placeholder="Ime i prezime" />
 				<input type="text" id="clientTime" placeholder="Vreme" />
 				<textarea id="clientNote" placeholder="Opis..."></textarea>
-				<button onclick="saveClient()">Sačuvaj</button>
-				<button onclick="closeModal()">Otkaži</button>
+				<div class="modal-actions">
+					<button onclick="saveClient()">Sačuvaj</button>
+				</div>
 			</div>
 		</div>
 		<script src="/js/main.js"></script>

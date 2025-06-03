@@ -444,26 +444,27 @@ function showClientInfoPopup(client, x, y) {
   popup.dataset.clientDate = client.date;
 
   popup.innerHTML = `
-    <div class="md3-dialog__header">
-      <p class="md3-dialog__date" id="clientDateDisplay">${formattedDate}</p>
-      <input type="text" id="clientDateInput" name="client_date" value="${client.date}" class="md3-text-field__input hidden" autocomplete="off" tabindex="1" />
-      <h3 class="md3-dialog__title" id="clientNameTitle">${client.name || "Nepoznato ime"}</h3>
-      <input type="text" id="clientNameInput" name="client_name" value="${client.name || ""}" class="md3-text-field__input hidden" autocomplete="off" tabindex="2" />
-    </div>
-    <div class="md3-dialog__content">
-      <p><strong>Vreme:</strong> <span id="clientTimeDisplay">${client.time || "Nema vremena"}</span></p>
-      <input type="text" id="clientTimeInput" name="client_time" value="${client.time || ""}" class="md3-text-field__input hidden" autocomplete="off" tabindex="3" />
-      <p><strong>Napomena:</strong> <span id="clientNoteDisplay">${client.note || ""}</span></p>
-      <textarea id="clientNoteInput" name="client_note" class="md3-text-field__textarea hidden" tabindex="4">${client.note || ""}</textarea>
-    </div>
-    <div class="md3-dialog__actions">
-      <button class="md3-button md3-button--text" onclick="event.stopPropagation(); markClientCompleted()">
-        ${client.completed ? "Vrati u zakazano" : "Završeno"}
-      </button>
-      <button class="md3-button md3-button--text" onclick="event.stopPropagation(); toggleEditMode()">Izmeniti</button>
-      <button class="md3-button md3-button--text" onclick="event.stopPropagation(); deleteClient(this.parentElement.parentElement)">Obriši</button>
-    </div>
-  `;
+  <div class="md3-dialog__header">
+    <p class="md3-dialog__date" id="clientDateDisplay">${formattedDate}</p>
+    <span class="close-icon" onclick="closeClientInfoPopup()"><i class="fas fa-times"></i></span>
+    <input type="text" id="clientDateInput" name="client_date" value="${client.date}" class="md3-text-field__input hidden" autocomplete="off" tabindex="1" />
+    <h3 class="md3-dialog__title" id="clientNameTitle">${client.name || "Nepoznato ime"}</h3>
+    <input type="text" id="clientNameInput" name="client_name" value="${client.name || ""}" class="md3-text-field__input hidden" autocomplete="off" tabindex="2" />
+  </div>
+  <div class="md3-dialog__content">
+    <p><strong>Vreme:</strong> <span id="clientTimeDisplay">${client.time || "Nema vremena"}</span></p>
+    <input type="text" id="clientTimeInput" name="client_time" value="${client.time || ""}" class="md3-text-field__input hidden" autocomplete="off" tabindex="3" />
+    <p><strong>Napomena:</strong> <span id="clientNoteDisplay">${client.note || ""}</span></p>
+    <textarea id="clientNoteInput" name="client_note" class="md3-text-field__textarea hidden" tabindex="4">${client.note || ""}</textarea>
+  </div>
+  <div class="md3-dialog__actions">
+    <button class="md3-button md3-button--text" onclick="event.stopPropagation(); markClientCompleted()">
+      ${client.completed ? "Vrati u zakazano" : "Završeno"}
+    </button>
+    <button class="md3-button md3-button--text" onclick="event.stopPropagation(); toggleEditMode()">Izmeniti</button>
+    <button class="md3-button md3-button--text" onclick="event.stopPropagation(); deleteClient(this.parentElement.parentElement)">Obriši</button>
+  </div>
+`;
 
   popup.dataset.flatpickrInitialized = "false";
 
