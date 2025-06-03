@@ -297,6 +297,11 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  position: fixed;
+  top: 50%;
+  left:50%;
+  transform:translate(-50%, -50%);
+  box-shadow: 0 0 8px #666;
 }
 
 .modal-content input,
@@ -1199,4 +1204,42 @@ body {
   padding: 6px 10px;
   cursor: pointer;
   color: #000;
+}
+
+#clientNameInput,
+.md3-text-field__input {
+  user-select: text; /* Omogući selektovanje teksta */
+  -webkit-user-select: text; /* Za Safari */
+  -moz-user-select: text; /* Za Firefox */
+  -ms-user-select: text; /* Za Edge */
+}
+
+/* Osiguraj da roditeljski elementi ne blokiraju selekciju */
+.client-info-popup,
+.md3-dialog {
+  user-select: auto; /* Dozvoli normalno selektovanje */
+}
+
+.md3-text-field__input,
+.md3-text-field__textarea,
+#clientNameInput,
+#clientDateInput,
+#clientTimeInput,
+#clientNoteInput {
+  user-select: text; /* Omogući selektovanje teksta */
+  -webkit-user-select: text; /* Za Safari */
+  -moz-user-select: text; /* Za Firefox */
+  -ms-user-select: text; /* Za Edge */
+}
+
+/* Osiguraj da roditeljski elementi ne blokiraju selekciju */
+.client-info-popup,
+.md3-dialog {
+  user-select: auto;
+}
+
+/* Vizuelna povratna informacija za fokus */
+.md3-text-field__input:focus,
+.md3-text-field__textarea:focus {
+  outline: 2px solid #6200ee; /* Jasno pokaži da je polje fokusirano */
 }
