@@ -1,9 +1,8 @@
 // main.js
-
 let currentDate = new Date();
 let selectedCellElement = null;
 let flatpickrInstance = null;
-const clientData = {}; // ključ: ISO datum, vrednost: niz klijenata
+let clientData = {}; // ključ: ISO datum, vrednost: niz klijenata
 
 
 
@@ -32,58 +31,45 @@ function updateWeekdayDates(baseDate) {
   renderClientsForCurrentWeek();
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const savedData = localStorage.getItem("clientData");
-  if (savedData) {
-    try {
-      const parsedData = JSON.parse(savedData);
-      for (const iso in parsedData) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
-          console.warn("Invalid ISO date in clientData:", iso);
-          delete parsedData[iso];
-        }
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const response = await fetch('/api/clients');
+    if (!response.ok) throw new Error('Greška pri dohvatanju klijenata');
+    clientData = await response.json();
+    console.log('Učitani podaci sa servera:', clientData);
+
+    if (document.getElementById("clientsList")) {
+      renderClientsList();
+      const todayBtn = document.getElementById("today-btn");
+      if (todayBtn) {
+        todayBtn.addEventListener("click", () => {
+          const todayHeader = document.getElementById("today-header");
+          if (todayHeader) {
+            todayHeader.scrollIntoView({ behavior: "smooth", block: "start" });
+            const clientsList = document.getElementById("clientsList");
+            clientsList.style.height = clientsList.offsetHeight + 'px';
+            clientsList.style.height = 'auto';
+          }
+        });
       }
-      Object.assign(clientData, parsedData);
-      console.log("Loaded clientData from localStorage:", clientData);
-    } catch (error) {
-      console.error("Error parsing clientData from localStorage:", error);
-      localStorage.removeItem("clientData");
+    } else {
+      const today = new Date();
+      currentDate = today; // Ovo je verovatno linija 38, gde se javlja greška
+      generateMiniCalendar(today.getFullYear(), today.getMonth());
+      const todayBtn = document.getElementById("today-btn");
+      if (todayBtn) {
+        todayBtn.addEventListener("click", () => {
+          const today = new Date();
+          currentDate = today;
+          generateMiniCalendar(today.getFullYear(), today.getMonth());
+        });
+      }
     }
-  } else {
-    console.log("No clientData in localStorage");
-  }
-
-  if (document.getElementById("clientsList")) {
-    renderClientsList();
-    // Dodaj event listener za today-btn na stranici sa listom
-    const todayBtn = document.getElementById("today-btn");
-    if (todayBtn) {
-      todayBtn.addEventListener("click", () => {
-        const todayHeader = document.getElementById("today-header");
-        if (todayHeader) {
-          todayHeader.scrollIntoView({ behavior: "smooth", block: "start" });
-          // Prisilno osveži skrolbar
-          const clientsList = document.getElementById("clientsList");
-          clientsList.style.height = clientsList.offsetHeight + 'px';
-          clientsList.style.height = 'auto';
-        }
-      });
-    }
-  } else {
-    const today = new Date();
-    currentDate = today;
-    generateMiniCalendar(today.getFullYear(), today.getMonth());
-
-    const todayBtn = document.getElementById("today-btn");
-    if (todayBtn) {
-      todayBtn.addEventListener("click", () => {
-        const today = new Date();
-        currentDate = today;
-        generateMiniCalendar(today.getFullYear(), today.getMonth());
-      });
-    }
+  } catch (error) {
+    console.error('Greška pri inicijalizaciji:', error); // Linija 69
   }
 });
+
 
 
 function generateMiniCalendar(year, month) {
@@ -223,13 +209,12 @@ function closeModal() {
   document.getElementById("dayModal").classList.add("hidden");
 }
 
-function saveClient() {
+async function saveClient() {
   const name = document.getElementById("clientName").value;
   const time = document.getElementById("clientTime").value;
   const note = document.getElementById("clientNote").value;
 
   if (!name || !time) {
-    console.log("Validation failed: Missing name or time");
     alert("Unesite ime i vreme");
     return;
   }
@@ -238,13 +223,11 @@ function saveClient() {
   const modal = document.getElementById("dayModal");
 
   if (modal.dataset.selectedDate) {
-    // Datum iz kalendara
     iso = modal.dataset.selectedDate;
   } else if (selectedCellElement) {
-    // Datum iz grid ćelije
     const label = selectedCellElement.querySelector(".date-label");
     const parentH3 = selectedCellElement.querySelector("h3");
-    const dayName = parentH3.textContent.split(" ")[0]; // npr. "Pon"
+    const dayName = parentH3.textContent.split(" ")[0];
     const dayNumber = label.textContent.trim();
 
     const baseDate = getMonday(currentDate);
@@ -257,36 +240,29 @@ function saveClient() {
 
     iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   } else {
-    console.error("No selected date or cell element");
     alert("Greška: Nije izabran datum.");
     return;
   }
 
-  console.log("Saving client for date:", iso, "Client:", { name, time, note });
-
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
-    console.error("Invalid ISO date:", iso);
-    alert("Greška pri čuvanju klijenta: nevažeći datum.");
-    return;
-  }
-
-  if (!clientData[iso]) clientData[iso] = [];
-  clientData[iso].push({ name, time, note, completed: false });
-
   try {
-    localStorage.setItem("clientData", JSON.stringify(clientData));
-    console.log("Saved clientData to localStorage:", JSON.stringify(clientData));
+    const response = await fetch('/api/clients', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: iso, name, time, note }),
+    });
+    if (!response.ok) throw new Error('Greška pri dodavanju klijenta');
+    const newClient = await response.json();
+    if (!clientData[iso]) clientData[iso] = [];
+    clientData[iso].push(newClient);
+    renderClientsForCurrentWeek();
+    if (document.getElementById("clientsList")) {
+      renderClientsList();
+    }
+    closeModal();
   } catch (error) {
-    console.error("Error saving to localStorage:", error);
-    alert("Greška pri čuvanju podataka.");
+    console.error('Greška pri čuvanju klijenta:', error);
+    alert('Greška pri čuvanju klijenta');
   }
-
-  renderClientsForCurrentWeek();
-  if (document.getElementById("clientsList")) {
-    renderClientsList();
-  }
-
-  closeModal();
 }
 
 function openDayModal(dayText, selectedDate) {
@@ -323,20 +299,27 @@ document.addEventListener("click", (e) => {
   }
 });
 
-function deleteClient(popupEl) {
+async function deleteClient(popupEl) {
   const clientIndex = parseInt(popupEl.dataset.clientIndex);
   const isoDate = popupEl.dataset.clientDate;
+  const clientId = clientData[isoDate][clientIndex].id;
 
-  if (clientData[isoDate] && clientIndex >= 0) {
-    clientData[isoDate].splice(clientIndex, 1); // Ukloni klijenta po indeksu
-    localStorage.setItem("clientData", JSON.stringify(clientData));
+  try {
+    const response = await fetch(`/api/clients/${clientId}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Greška pri brisanju klijenta');
+    clientData[isoDate].splice(clientIndex, 1);
+    if (clientData[isoDate].length === 0) delete clientData[isoDate];
     renderClientsForCurrentWeek();
     if (document.getElementById("clientsList")) {
       renderClientsList();
     }
+    closeClientInfoPopup();
+  } catch (error) {
+    console.error('Greška pri brisanju klijenta:', error);
+    alert('Greška pri brisanju klijenta');
   }
-
-  closeClientInfoPopup();
 }
 
 
@@ -656,85 +639,80 @@ function toggleEditMode() {
   }
 }
 
-function markClientCompleted() {
+async function markClientCompleted() {
   const popup = document.getElementById("clientInfoPopup");
   if (!popup) return;
 
   const clientIndex = parseInt(popup.dataset.clientIndex);
   const isoDate = popup.dataset.clientDate;
+  const clientId = clientData[isoDate][clientIndex].id;
 
-  if (clientData[isoDate] && clientIndex >= 0) {
-    // Prebaci stanje completed (true -> false ili false -> true)
-    clientData[isoDate][clientIndex].completed = !clientData[isoDate][clientIndex].completed;
-    localStorage.setItem("clientData", JSON.stringify(clientData));
+  try {
+    const response = await fetch(`/api/clients/${clientId}/complete`, {
+      method: 'PATCH',
+    });
+    if (!response.ok) throw new Error('Greška pri označavanju klijenta');
+    const updatedClient = await response.json();
+
+    clientData[isoDate][clientIndex] = updatedClient;
     renderClientsForCurrentWeek();
     if (document.getElementById("clientsList")) {
       renderClientsList();
     }
+    closeClientInfoPopup();
+  } catch (error) {
+    console.error('Greška pri označavanju klijenta:', error);
+    alert('Greška pri označavanju klijenta');
   }
-
-  closeClientInfoPopup();
 }
 
-function saveEditedClient() {
+async function saveEditedClient() {
   const popup = document.getElementById("clientInfoPopup");
   if (!popup) return;
 
   const newName = document.getElementById("clientNameInput").value.trim();
   const newTime = document.getElementById("clientTimeInput").value.trim();
   const newNote = document.getElementById("clientNoteInput").value.trim();
-  const newDate = document.getElementById("clientDateInput").value.trim(); // Novi datum
+  const newDate = document.getElementById("clientDateInput").value.trim();
 
   if (!newName || !newTime || !newDate) {
     alert("Unesite ime, vreme i datum");
     return;
   }
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
-    console.error("Invalid ISO date:", newDate);
-    alert("Nevažeći format datuma.");
-    return;
-  }
-
   const clientIndex = parseInt(popup.dataset.clientIndex);
   const oldDate = popup.dataset.clientDate;
+  const clientId = clientData[oldDate][clientIndex].id;
 
-  if (clientData[oldDate] && clientIndex >= 0) {
-    // Kopiraj postojeće podatke klijenta
-    const client = { ...clientData[oldDate][clientIndex] };
+  try {
+    const response = await fetch(`/api/clients/${clientId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date: newDate,
+        name: newName,
+        time: newTime,
+        note: newNote,
+        completed: clientData[oldDate][clientIndex].completed,
+      }),
+    });
+    if (!response.ok) throw new Error('Greška pri ažuriranju klijenta');
+    const updatedClient = await response.json();
+    // Ažuriraj clientData
+    clientData[oldDate].splice(clientIndex, 1);
+    if (clientData[oldDate].length === 0) delete clientData[oldDate];
+    if (!clientData[newDate]) clientData[newDate] = [];
+    clientData[newDate].push(updatedClient);
 
-    // Ažuriraj podatke
-    client.name = newName;
-    client.time = newTime;
-    client.note = newNote;
-
-    // Ako se datum promenio, premesti klijenta
-    if (oldDate !== newDate) {
-      // Ukloni klijenta sa starog datuma
-      clientData[oldDate].splice(clientIndex, 1);
-      if (clientData[oldDate].length === 0) {
-        delete clientData[oldDate];
-      }
-      // Dodaj klijenta na novi datum
-      if (!clientData[newDate]) {
-        clientData[newDate] = [];
-      }
-      clientData[newDate].push(client);
-    } else {
-      // Ako datum nije promenjen, samo ažuriraj postojeće podatke
-      clientData[oldDate][clientIndex] = client;
-    }
-
-    // Sačuvaj u localStorage
-    localStorage.setItem("clientData", JSON.stringify(clientData));
-
-    // Ažuriraj prikaz kalendara i liste
     renderClientsForCurrentWeek();
     if (document.getElementById("clientsList")) {
       renderClientsList();
     }
+    closeClientInfoPopup();
+  } catch (error) {
+    console.error('Greška pri ažuriranju klijenta:', error);
+    alert('Greška pri ažuriranju klijenta');
   }
-  closeClientInfoPopup();
 }
 
 /**
