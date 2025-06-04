@@ -30,7 +30,7 @@ app.use('/api/clients', clientRoutes);
 
 // Povezivanje sa MongoDB
 mongoose
-  .connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(process.env.MONGODB_URI)
   .then(() => console.log('Povezan sa MongoDB'))
   .catch((err) => console.error('Greška pri povezivanju sa MongoDB:', err));
 
