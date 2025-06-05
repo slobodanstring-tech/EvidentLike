@@ -52,14 +52,14 @@ body {
   color: #777;
 }
 
-.right-top{
+.right-top {
   display: flex;
-  gap:1rem;
-  align-items:center;
+  gap: 1rem;
+  align-items: center;
 }
 
-.right-top a{
-  padding-top: .3rem;
+.right-top a {
+  padding-top: 0.1rem;
 }
 
 .prev-month,
@@ -172,17 +172,6 @@ body {
   }
 }
 
-.top-bar {
-  font-size: 20px;
-  flex-shrink: 0;
-  font-weight: bold;
-  padding: 6px;
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  min-height: 50px;
-}
-
 .calendar-day {
   font-size: clamp(12px, 3vw, 14px);
 }
@@ -194,27 +183,15 @@ body {
   background-color: #e3f2fd;
 }
 
-.top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  background-color: #ffffff;
-  border-radius: 8px;
-  font-size: 18px;
-  font-weight: bold;
-  color: #333;
-}
-
 .top-bar button {
-  background: none;
-  border: none;
   font-size: 20px;
+  border: none;
   color: #1976d2;
   cursor: pointer;
   padding: 6px 10px;
-  border-radius: 6px;
   transition: background-color 0.2s ease;
+  background: #add8e657;
+  border-radius: 6px;
 }
 
 .top-bar button:hover {
@@ -222,10 +199,10 @@ body {
 }
 
 #today-btn {
-  font-size: 12px;
+  font-size: 16px;
   border: 1px solid #999;
   border-radius: 100px;
-  padding: 6px 10px;
+  padding: 8px 18px;
   cursor: pointer;
   color: #000;
 }
@@ -258,12 +235,11 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-size: 12px;
   color: #555;
 }
 
 .nav-item i {
-  font-size: 13px;
+  font-size: 16px;
   margin-bottom: 4px;
 }
 
@@ -272,11 +248,6 @@ body {
   flex-direction: column;
   justify-content: space-between;
   height: 100vh;
-}
-
-.active {
-  color: #1976d2;
-  font-weight: 700;
 }
 
 .modal {
@@ -293,15 +264,16 @@ body {
   background: white;
   border-radius: 10px;
   padding: 20px;
-  width: 90%;
+  width: 90vw;
   max-width: 300px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   position: fixed;
-  top: 50%;
-  left:50%;
-  transform:translate(-50%, -50%);
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 90vh;
   box-shadow: 0 0 8px #666;
 }
 
@@ -368,7 +340,7 @@ body {
 }
 .client-info-popup {
   position: absolute;
-  top: 50% !important;
+  top: 45% !important;
   left: 50% !important;
   transform: translate(-50%, -50%);
   background-color: white;
@@ -377,8 +349,9 @@ body {
   border-radius: 6px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   font-size: 14px;
-  width: 90vw;
+  width: 100vw;
   z-index: 9999;
+  height: 90vh;
 }
 
 .client-entry {
@@ -579,7 +552,6 @@ body {
 /* MD3 Dialog stilovi */
 .client-info-popup.md3-dialog {
   position: absolute;
-  width: 90vw;
   background-color: #ffffff;
   border-radius: 28px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
@@ -654,7 +626,9 @@ body {
   font-weight: 500;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background-color 0.2s, box-shadow 0.2s;
+  transition:
+    background-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .md3-button--text {
@@ -683,9 +657,9 @@ body {
 }
 
 .client-entry {
-  white-space: nowrap;        /* Ne dozvoljava novi red */
-  overflow: hidden;           /* Sakriva višak teksta */
-  text-overflow: ellipsis;    /* Dodaje "..." ako ne staje */
+  white-space: nowrap; /* Ne dozvoljava novi red */
+  overflow: hidden; /* Sakriva višak teksta */
+  text-overflow: ellipsis; /* Dodaje "..." ako ne staje */
   max-width: 100%;
 }
 
@@ -706,13 +680,15 @@ body {
   font-family: 'Roboto', sans-serif;
   width: 100%;
   box-sizing: border-box;
-  transition: border 0.2s, box-shadow 0.2s;
+  transition:
+    border 0.2s,
+    box-shadow 0.2s;
 }
 
 .flatpickr-input:focus {
   outline: none;
   border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
 /* Poboljšaj izgled inputa */
@@ -725,13 +701,15 @@ body {
   width: 100%;
   box-sizing: border-box;
   background-color: #fff;
-  transition: border 0.2s, box-shadow 0.2s;
+  transition:
+    border 0.2s,
+    box-shadow 0.2s;
 }
 
 #clientTime.flatpickr-input:focus {
   outline: none;
   border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0,123,255,0.2);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
 }
 
 /* Ulepšaj popup samog Flatpickr-a */
@@ -825,7 +803,7 @@ body {
 }
 
 .client-entry.completed::before {
-  content: "✔";
+  content: '✔';
   color: green;
   margin-right: 5px;
 }
@@ -834,17 +812,9 @@ body {
   display: none !important; /* !important osigurava da se primeni */
 }
 
-.top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  background-color: #f5f5f5;
-}
-
-.top-bar h2 {
-  margin: 0;
-  font-size: 1em;
+.top-bar span {
+  font-size: 24px;
+  font-weight: regular;
 }
 
 .back-btn {
@@ -893,6 +863,9 @@ body {
 .nav-item a {
   text-decoration: none;
   color: inherit;
+}
+#month-name {
+  margin-left: 16px;
 }
 
 .month-header {
@@ -1136,7 +1109,7 @@ body {
 }
 
 .client-item.completed::before {
-  content: "✔";
+  content: '✔';
   color: green;
   margin-right: 5px;
 }
@@ -1175,36 +1148,13 @@ body {
   width: 100%;
 }
 
-.nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 12px;
-  color: #555;
-}
-
-.nav-item a {
-  text-decoration: none;
-  color: inherit;
-}
-
 .active {
   color: #1976d2;
-  font-weight: 700;
 }
 
 /* Skriveni elementi */
 .hidden {
   display: none !important;
-}
-
-#today-btn {
-  font-size: 12px;
-  border: 1px solid #999;
-  border-radius: 100px;
-  padding: 6px 10px;
-  cursor: pointer;
-  color: #000;
 }
 
 #clientNameInput,
