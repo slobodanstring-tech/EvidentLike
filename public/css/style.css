@@ -1018,6 +1018,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
+  overflow: hidden;
 }
 
 /* Top bar */
@@ -1134,10 +1135,6 @@ body {
   width: 100%;
 }
 
-.active {
-  color: #1976d2;
-}
-
 /* Skriveni elementi */
 .hidden {
   display: none !important;
@@ -1235,4 +1232,270 @@ body {
 .modal-actions button:last-child {
   background: #ccc;
   color: #333;
+}
+
+#calendar-view{
+  height: 100dvh;
+  padding-bottom: 60px;
+}
+
+.clients-top{
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.view {
+  display: none;
+}
+.view.active {
+  display: block;
+}
+.hidden {
+  display: none !important; /* Visoki prioritet za skrivanje */
+}
+.clients-list {
+  max-height: calc(100vh - 150px); /* Prilagodi prema visini top-bar i bottom-bar */
+  overflow-y: auto;
+  padding: 16px;
+}
+.month-header {
+  font-size: 1.5em;
+  margin: 16px 0 8px;
+}
+.client-item {
+  padding: 8px;
+  cursor: pointer;
+}
+.client-item.today-client {
+  font-weight: bold;
+}
+.client-item.past-client {
+  color: #888;
+}
+.client-item.future-client {
+  color: #000;
+}
+.client-item.completed {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+.nav-item {
+  cursor: pointer;
+}
+.nav-item.active i,
+.nav-item.active span {
+  color: #007bff; /* Prilagodi boju prema dizajnu */
+}
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+}
+.clients-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.clients-top h2 {
+  margin: 0;
+}
+.back-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+.right-top {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.right-top.clients-mode {
+  justify-content: flex-end; /* Poravnaj "Danas" desno kada je all-clients-btn skriven */
+}
+.top-bar-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 8px;
+  transition: opacity 0.2s; /* Glatka tranzicija za skrivanje/prikazivanje */
+}
+#all-clients-btn.hidden {
+  display: none !important; /* Specifično pravilo za all-clients-btn */
+}
+
+.view {
+  display: none;
+}
+.view.active {
+  display: block;
+}
+.hidden {
+  display: none !important; /* Visoki prioritet za skrivanje */
+}
+.clients-list {
+  max-height: calc(100vh - 150px); /* Prilagodi prema visini top-bar i bottom-bar */
+  overflow-y: auto;
+  padding: 16px;
+}
+.month-header {
+  font-size: 1.5em;
+  margin: 16px 0 8px;
+}
+.client-item {
+  padding: 8px;
+  cursor: pointer;
+}
+.client-item.today-client {
+  font-weight: bold;
+}
+.client-item.past-client {
+  color: #888;
+}
+.client-item.future-client {
+  color: #000;
+}
+.client-item.completed {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+.nav-item {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.nav-item.active i,
+.nav-item.active span {
+  color: #007bff; /* Plava boja za aktivni prikaz */
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+}
+.clients-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.clients-top h2 {
+  margin: 0;
+}
+.back-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+.right-top {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.right-top.clients-mode {
+  justify-content: flex-end; /* Poravnaj "Danas" desno */
+}
+.top-bar-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 8px;
+  transition: opacity 0.2s;
+}
+#all-clients-btn.hidden {
+  display: none !important; /* Specifično pravilo za all-clients-btn */
+}
+
+.view {
+  display: none;
+}
+.view.active {
+  display: block;
+}
+.hidden {
+  display: none !important; /* Visoki prioritet za skrivanje */
+}
+.clients-list {
+  max-height: calc(100vh - 150px);
+  overflow-y: auto;
+  padding: 16px;
+}
+.month-header {
+  font-size: 1.5em;
+  margin: 16px 0 8px;
+}
+.client-item {
+  padding: 8px;
+  cursor: pointer;
+}
+.client-item.today-client {
+  font-weight: bold;
+}
+.client-item.past-client {
+  color: #888;
+}
+.client-item.future-client {
+  color: #000;
+}
+.client-item.completed {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+.nav-item {
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #000; /* Normalna boja za sve nav-item stavke */
+}
+.nav-item[data-view="clients"] {
+  cursor: default; /* Bez pokazivača za klik */
+  pointer-events: none; /* Onemogući interakcije */
+  opacity: 1; /* Normalna prozirnost */
+}
+.nav-item.active i,
+.nav-item.active span {
+  color: #007bff; /* Plava boja samo za aktivne prikaze */
+}
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+}
+.clients-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.clients-top h2 {
+  margin: 0;
+}
+.back-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+.right-top {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.right-top.clients-mode {
+  justify-content: flex-end; /* Poravnaj "Danas" desno */
+}
+.top-bar-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 8px;
+  transition: opacity 0.2s;
+}
+#all-clients-btn.hidden {
+  display: none !important; /* Specifično pravilo za all-clients-btn */
 }

@@ -4,9 +4,171 @@ let selectedCellElement = null;
 let flatpickrInstance = null;
 let clientData = {}; // ključ: ISO datum, vrednost: niz klijenata
 
+// Funkcija za prebacivanje između prikaza
+function switchView(view) {
+  console.log("Prebacujem na prikaz:", view);
 
+  // Pronađi elemente
+  const views = document.querySelectorAll(".view");
+  const navItems = document.querySelectorAll(".nav-item");
+  const calendarTop = document.getElementById("calendar-top");
+  const clientsTop = document.querySelector(".clients-top");
+  const allClientsBtn = document.getElementById("all-clients-btn");
+  const rightTop = document.getElementById("right-top");
 
+  // Provera da li su svi elementi prisutni
+  if (!calendarTop || !clientsTop || !allClientsBtn || !rightTop) {
+    console.error("Greška: Neki elementi top-bara nisu pronađeni!", {
+      calendarTop: !!calendarTop,
+      clientsTop: !!clientsTop,
+      allClientsBtn: !!allClientsBtn,
+      rightTop: !!rightTop,
+    });
+    return;
+  }
 
+  // Ažuriraj vidljivost prikaza
+  views.forEach((v) => {
+    if (v.id === `${view}-view`) {
+      console.log(`Prikazujem view: ${v.id}`);
+      v.classList.remove("hidden");
+      v.classList.add("active");
+    } else {
+      console.log(`Sakrivam view: ${v.id}`);
+      v.classList.add("hidden");
+      v.classList.remove("active");
+    }
+  });
+
+  // Ažuriraj navigacionu traku, isključujući "clients"
+  navItems.forEach((item) => {
+    item.classList.remove("active");
+    const icon = item.querySelector("i");
+    const span = item.querySelector("span");
+    if (icon && span) {
+      icon.classList.remove("active");
+      span.classList.remove("active");
+    }
+    // Dodaj klasu active samo ako nije "clients"
+    if (item.dataset.view === view && item.dataset.view !== "clients") {
+      console.log(`Aktiviram nav-item: ${item.dataset.view}`);
+      item.classList.add("active");
+      if (icon && span) {
+        icon.classList.add("active");
+        span.classList.add("active");
+      }
+    } else {
+      console.log(`Ne aktiviram nav-item: ${item.dataset.view}`);
+    }
+  });
+
+  // Ažuriraj top-bar
+  console.log(`Ažuriram top-bar za prikaz: ${view}`);
+  if (view === "clients") {
+    console.log("Sakrivam all-clients-btn i prikazujem clients-top");
+    calendarTop.classList.add("hidden");
+    clientsTop.classList.remove("hidden");
+    allClientsBtn.classList.add("hidden"); // Dodaj klasu hidden
+    console.log("all-clients-btn klase:", allClientsBtn.classList.toString());
+    console.log("all-clients-btn computed style display:", window.getComputedStyle(allClientsBtn).display);
+    rightTop.classList.add("clients-mode");
+    renderClientsList();
+  } else {
+    console.log("Prikazujem all-clients-btn i sakrivam clients-top");
+    calendarTop.classList.remove("hidden");
+    clientsTop.classList.add("hidden");
+    allClientsBtn.classList.remove("hidden"); // Ukloni klasu hidden
+    console.log("all-clients-btn klase:", allClientsBtn.classList.toString());
+    console.log("all-clients-btn computed style display:", window.getComputedStyle(allClientsBtn).display);
+    rightTop.classList.remove("clients-mode");
+    generateMiniCalendar(currentDate.getFullYear(), currentDate.getMonth());
+    updateWeekdayDates(currentDate);
+  }
+}
+
+// Ažurirani DOMContentLoaded događaj
+// Ažurirani DOMContentLoaded događaj
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const response = await fetch("/api/clients");
+    if (!response.ok) throw new Error("Greška pri dohvatanju klijenata");
+    clientData = await response.json();
+    console.log("Učitani podaci sa servera:", clientData);
+
+    // Inicijalno prikazivanje kalendara
+    const today = new Date();
+    currentDate = today;
+    generateMiniCalendar(today.getFullYear(), today.getMonth());
+    updateWeekdayDates(today);
+
+    // Postavi event listener za all-clients-btn
+    const allClientsBtn = document.getElementById("all-clients-btn");
+    if (allClientsBtn) {
+      console.log("Pronađen all-clients-btn, postavljanje event listenera");
+      allClientsBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        console.log("Klik na all-clients-btn, prelazim na prikaz klijenata");
+        switchView("clients");
+      });
+    } else {
+      console.error('all-clients-btn NIJE PRONAĐEN u DOM-u! Proveri index.ejs za id="all-clients-btn".');
+    }
+
+    // Postavi event listener za today-btn
+    const todayBtn = document.getElementById("today-btn");
+    if (todayBtn) {
+      console.log("Pronađen today-btn, postavljanje event listenera");
+      todayBtn.addEventListener("click", () => {
+        console.log("Klik na today-btn");
+        const today = new Date();
+        currentDate = today;
+
+        // Proveri koji je trenutni prikaz
+        const isClientsViewActive = document.getElementById("clients-view").classList.contains("active");
+
+        if (isClientsViewActive) {
+          // Ako je lista klijenata aktivna, samo skroluj na "Danas"
+          console.log("Lista klijenata je aktivna, skrolujem na 'Danas'");
+          renderClientsList(); // Osveži listu klijenata
+          setTimeout(() => {
+            const todayHeader = document.getElementById("today-header");
+            if (todayHeader) {
+              todayHeader.scrollIntoView({ behavior: "smooth", block: "start" });
+            } else {
+              console.warn("today-header nije pronađen u clients-view");
+            }
+          }, 100); // Dodat mali delay da osiguramo da je renderClientsList završen
+        } else {
+          // Ako nije lista klijenata, prebaci na kalendar
+          console.log("Prebacujem na prikaz kalendara");
+          switchView("calendar");
+          generateMiniCalendar(today.getFullYear(), today.getMonth());
+          updateWeekdayDates(today);
+        }
+      });
+    } else {
+      console.error('today-btn NIJE PRONAĐEN u DOM-u! Proveri index.html za id="today-btn".');
+    }
+
+    // Postavi event listenere za navigaciju, isključujući "clients" i "expenses"
+    document.querySelectorAll(".nav-item").forEach((item) => {
+      if (item.dataset.view !== "clients" && item.dataset.view !== "expenses") {
+        console.log(`Postavljam event listener za nav-item: ${item.dataset.view}`);
+        item.addEventListener("click", () => {
+          const view = item.dataset.view;
+          console.log("Klik na nav-item, prelazim na prikaz:", view);
+          switchView(view);
+        });
+      } else {
+        console.log(`Preskačem event listener za nav-item: ${item.dataset.view}`);
+      }
+    });
+  } catch (error) {
+    console.error("Greška pri inicijalizaciji:", error);
+  }
+}); 
+
+// Ostatak koda ostaje isti
 function updateWeekdayDates(baseDate) {
   const dayIds = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
   const startOfWeek = getMonday(baseDate);
@@ -31,54 +193,16 @@ function updateWeekdayDates(baseDate) {
   renderClientsForCurrentWeek();
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-  try {
-    const response = await fetch('/api/clients');
-    if (!response.ok) throw new Error('Greška pri dohvatanju klijenata');
-    clientData = await response.json();
-    console.log('Učitani podaci sa servera:', clientData);
-
-    if (document.getElementById("clientsList")) {
-      renderClientsList();
-      const todayBtn = document.getElementById("today-btn");
-      if (todayBtn) {
-        todayBtn.addEventListener("click", () => {
-          const todayHeader = document.getElementById("today-header");
-          if (todayHeader) {
-            todayHeader.scrollIntoView({ behavior: "smooth", block: "start" });
-            const clientsList = document.getElementById("clientsList");
-            clientsList.style.height = clientsList.offsetHeight + 'px';
-            clientsList.style.height = 'auto';
-          }
-        });
-      }
-    } else {
-      const today = new Date();
-      currentDate = today; // Ovo je verovatno linija 38, gde se javlja greška
-      generateMiniCalendar(today.getFullYear(), today.getMonth());
-      const todayBtn = document.getElementById("today-btn");
-      if (todayBtn) {
-        todayBtn.addEventListener("click", () => {
-          const today = new Date();
-          currentDate = today;
-          generateMiniCalendar(today.getFullYear(), today.getMonth());
-        });
-      }
-    }
-  } catch (error) {
-    console.error('Greška pri inicijalizaciji:', error); // Linija 69
-  }
-});
-
-
-
 function generateMiniCalendar(year, month) {
-  const daysContainer = document.getElementById('calendar-days');
-  if (!daysContainer) return;
+  const daysContainer = document.getElementById("calendar-days");
+  if (!daysContainer) {
+    console.error("Greška: calendar-days element nije pronađen!");
+    return;
+  }
 
   console.log("Generisanje kalendara za godinu:", year, "mesec:", month);
 
-  daysContainer.innerHTML = '';
+  daysContainer.innerHTML = "";
   const firstDay = new Date(year, month, 1);
   const startDay = (firstDay.getDay() + 6) % 7; // Ponedeljak kao prvi dan
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -88,20 +212,20 @@ function generateMiniCalendar(year, month) {
   for (let i = startDay - 1; i >= 0; i--) {
     const dayNum = daysInPrevMonth - i;
     const prevDate = new Date(year, month - 1, dayNum);
-    const prevDay = document.createElement('div');
-    prevDay.classList.add('calendar-day', 'prev-month');
+    const prevDay = document.createElement("div");
+    prevDay.classList.add("calendar-day", "prev-month");
     prevDay.textContent = prevDate.getDate();
-    prevDay.dataset.fullDate = prevDate.toISOString().split('T')[0];
+    prevDay.dataset.fullDate = prevDate.toISOString().split("T")[0];
     daysContainer.appendChild(prevDay);
   }
 
   // Current month days
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(year, month, d);
-    const day = document.createElement('div');
-    day.classList.add('calendar-day');
+    const day = document.createElement("div");
+    day.classList.add("calendar-day");
     day.textContent = date.getDate();
-    day.dataset.fullDate = date.toISOString().split('T')[0];
+    day.dataset.fullDate = date.toISOString().split("T")[0];
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -110,7 +234,7 @@ function generateMiniCalendar(year, month) {
       month === today.getMonth() &&
       year === today.getFullYear()
     ) {
-      day.classList.add('today');
+      day.classList.add("today");
     }
 
     daysContainer.appendChild(day);
@@ -121,26 +245,45 @@ function generateMiniCalendar(year, month) {
   const remaining = 42 - totalCells;
   for (let i = 1; i <= remaining; i++) {
     const date = new Date(year, month + 1, i);
-    const nextDay = document.createElement('div');
-    nextDay.classList.add('calendar-day', 'next-month');
+    const nextDay = document.createElement("div");
+    nextDay.classList.add("calendar-day", "next-month");
     nextDay.textContent = date.getDate();
-    nextDay.dataset.fullDate = date.toISOString().split('T')[0];
+    nextDay.dataset.fullDate = date.toISOString().split("T")[0];
     daysContainer.appendChild(nextDay);
   }
 
-  const monthName = document.getElementById('month-name');
+  // Ispravka: Koristi document.querySelector umesto document.get
+  const monthName = document.querySelector("span#month-name");
   if (monthName) {
-    const monthNames = ["Januar", "Februar", "Mart", "April", "Maj", "Jun", "Jul", "Avgust", "Septembar", "Oktobar", "Novembar", "Decembar"];
+    const monthNames = [
+      "Januar",
+      "Februar",
+      "Mart",
+      "April",
+      "Maj",
+      "Jun",
+      "Jul",
+      "Avgust",
+      "Septembar",
+      "Oktobar",
+      "Novembar",
+      "Decembar",
+    ];
     monthName.textContent = monthNames[month];
+  } else {
+    console.warn("month-name element nije pronađen u DOM-u!");
   }
 
-  const allDays = daysContainer.querySelectorAll('.calendar-day');
-  allDays.forEach(day => {
-    day.addEventListener('click', () => {
+  const allDays = daysContainer.querySelectorAll(".calendar-day");
+  allDays.forEach((day) => {
+    day.addEventListener("click", () => {
       const clickedDate = new Date(day.dataset.fullDate);
       clickedDate.setHours(0, 0, 0, 0);
       currentDate = clickedDate;
-      console.log("Klik na dan u mini kalendaru, currentDate:", currentDate.toISOString());
+      console.log(
+        "Klik na dan u mini kalendaru, currentDate:",
+        currentDate.toISOString()
+      );
       updateWeekdayDates(clickedDate);
       highlightWeekInCalendar(clickedDate);
     });
@@ -152,27 +295,27 @@ function generateMiniCalendar(year, month) {
 }
 
 function highlightWeekInCalendar(referenceDate) {
-  document.querySelectorAll('.calendar-day.week-selected').forEach(el => {
-    el.classList.remove('week-selected');
+  document.querySelectorAll(".calendar-day.week-selected").forEach((el) => {
+    el.classList.remove("week-selected");
   });
 
   const monday = getMonday(referenceDate);
   for (let i = 0; i < 7; i++) {
     const date = new Date(monday);
     date.setDate(monday.getDate() + i);
-    const iso = date.toISOString().split('T')[0];
+    const iso = date.toISOString().split("T")[0];
     const cell = document.querySelector(`.calendar-day[data-full-date="${iso}"]`);
     if (cell) {
-      cell.classList.add('week-selected');
+      cell.classList.add("week-selected");
     }
   }
 }
 
-const prevBtn = document.getElementById('prev-month');
-const nextBtn = document.getElementById('next-month');
+const prevBtn = document.getElementById("prev-month");
+const nextBtn = document.getElementById("next-month");
 
 if (prevBtn) {
-  prevBtn.addEventListener('click', () => {
+  prevBtn.addEventListener("click", () => {
     console.log("Prethodni mesec, currentDate pre:", currentDate.toISOString());
     const newDate = new Date(currentDate);
     newDate.setDate(1); // Postavi dan na 1
@@ -184,7 +327,7 @@ if (prevBtn) {
 }
 
 if (nextBtn) {
-  nextBtn.addEventListener('click', () => {
+  nextBtn.addEventListener("click", () => {
     console.log("Sledeći mesec, currentDate pre:", currentDate.toISOString());
     const newDate = new Date(currentDate);
     newDate.setDate(1); // Postavi dan na 1
@@ -194,7 +337,8 @@ if (nextBtn) {
     generateMiniCalendar(currentDate.getFullYear(), currentDate.getMonth());
   });
 }
-document.querySelectorAll(".grid .cell").forEach(cell => {
+
+document.querySelectorAll(".grid .cell").forEach((cell) => {
   const title = cell.querySelector("h3");
   if (title) {
     title.addEventListener("click", () => {
@@ -222,11 +366,27 @@ async function saveClient() {
   let iso;
   const modal = document.getElementById("dayModal");
 
+  if (!modal) {
+    console.error("Greška: dayModal nije pronađen u DOM-u");
+    alert("Greška: Modal nije dostupan.");
+    return;
+  }
+
   if (modal.dataset.selectedDate) {
     iso = modal.dataset.selectedDate;
   } else if (selectedCellElement) {
-    const label = selectedCellElement.querySelector(".date-label");
+    const label = selectedCellElement.querySelector("span.date-label");
     const parentH3 = selectedCellElement.querySelector("h3");
+
+    if (!label || !parentH3) {
+      console.error("Greška: label ili h3 nisu pronađeni u selectedCellElement", {
+        label: !!label,
+        parentH3: !!parentH3,
+      });
+      alert("Greška: Nisu pronađeni potrebni elementi za datum.");
+      return;
+    }
+
     const dayName = parentH3.textContent.split(" ")[0];
     const dayNumber = label.textContent.trim();
 
@@ -234,23 +394,30 @@ async function saveClient() {
     const weekdays = ["Pon", "Uto", "Sre", "Čet", "Pet", "Sub", "Ned"];
     const dayIndex = weekdays.indexOf(dayName);
 
+    if (dayIndex === -1) {
+      console.error("Greška: Dan nije pronađen u weekdays nizu:", dayName);
+      alert("Greška: Nevažeći dan.");
+      return;
+    }
+
     const date = new Date(baseDate);
     date.setDate(baseDate.getDate() + dayIndex);
     date.setHours(0, 0, 0, 0);
 
     iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   } else {
+    console.error("Greška: Niti je izabran datum u modalu niti je postavljen selectedCellElement");
     alert("Greška: Nije izabran datum.");
     return;
   }
 
   try {
-    const response = await fetch('/api/clients', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const response = await fetch("/api/clients", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ date: iso, name, time, note }),
     });
-    if (!response.ok) throw new Error('Greška pri dodavanju klijenta');
+    if (!response.ok) throw new Error("Greška pri dodavanju klijenta");
     const newClient = await response.json();
     if (!clientData[iso]) clientData[iso] = [];
     clientData[iso].push(newClient);
@@ -260,8 +427,8 @@ async function saveClient() {
     }
     closeModal();
   } catch (error) {
-    console.error('Greška pri čuvanju klijenta:', error);
-    alert('Greška pri čuvanju klijenta');
+    console.error("Greška pri čuvanju klijenta:", error);
+    alert("Greška pri čuvanju klijenta");
   }
 }
 
@@ -278,7 +445,7 @@ function openDayModal(dayText, selectedDate) {
 
   // Sačuvaj izabrani datum u modalu za kasnije čuvanje
   const modal = document.getElementById("dayModal");
-  modal.dataset.selectedDate = selectedDate ? selectedDate.toISOString().split('T')[0] : '';
+  modal.dataset.selectedDate = selectedDate ? selectedDate.toISOString().split("T")[0] : "";
 
   if (flatpickrInstance) flatpickrInstance.destroy();
   flatpickrInstance = flatpickr("#clientTime", {
@@ -288,7 +455,7 @@ function openDayModal(dayText, selectedDate) {
     time_24hr: true,
     minuteIncrement: 5,
     defaultHour: 12,
-    defaultMinute: 0
+    defaultMinute: 0,
   });
 }
 
@@ -306,9 +473,9 @@ async function deleteClient(popupEl) {
 
   try {
     const response = await fetch(`/api/clients/${clientId}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
-    if (!response.ok) throw new Error('Greška pri brisanju klijenta');
+    if (!response.ok) throw new Error("Greška pri brisanju klijenta");
     clientData[isoDate].splice(clientIndex, 1);
     if (clientData[isoDate].length === 0) delete clientData[isoDate];
     renderClientsForCurrentWeek();
@@ -317,11 +484,10 @@ async function deleteClient(popupEl) {
     }
     closeClientInfoPopup();
   } catch (error) {
-    console.error('Greška pri brisanju klijenta:', error);
-    alert('Greška pri brisanju klijenta');
+    console.error("Greška pri brisanju klijenta:", error);
+    alert("Greška pri brisanju klijenta");
   }
 }
-
 
 function renderClientsForCurrentWeek() {
   console.log("Pokrećem renderClientsForCurrentWeek, currentDate:", currentDate.toISOString());
@@ -418,8 +584,18 @@ function showClientInfoPopup(client, x, y) {
 
   const date = new Date(client.date);
   const formattedDate = `${date.getDate()}. ${[
-    "Januar", "Februar", "Mart", "April", "Maj", "Jun",
-    "Jul", "Avgust", "Septembar", "Oktobar", "Novembar", "Decembar"
+    "Januar",
+    "Februar",
+    "Mart",
+    "April",
+    "Maj",
+    "Jun",
+    "Jul",
+    "Avgust",
+    "Septembar",
+    "Oktobar",
+    "Novembar",
+    "Decembar",
   ][date.getMonth()]} ${date.getFullYear()}`;
 
   popup.dataset.clientData = JSON.stringify(client);
@@ -496,53 +672,6 @@ function showClientInfoPopup(client, x, y) {
   }, 0);
 }
 
-function closeClientInfoPopup() {
-  const popup = document.getElementById("clientInfoPopup");
-  if (popup) popup.classList.add("hidden");
-}
-
-function toggleEditName() {
-  const title = document.getElementById("clientNameTitle");
-  const input = document.getElementById("clientNameInput");
-  if (title && input) {
-    title.classList.toggle("hidden");
-    input.classList.toggle("hidden");
-    if (!input.classList.contains("hidden")) {
-      input.focus(); // Fokusiraj input polje kada se prikaže
-    }
-  }
-}
-
-function saveEditedClientName() {
-  const popup = document.getElementById("clientInfoPopup");
-  if (!popup) return;
-
-  const newName = document.getElementById("clientNameInput").value.trim();
-  const newNote = document.getElementById("clientNoteInput").value.trim();
-  const newTime = document.getElementById("clientTimeInput").value.trim();
-
-  if (!newName || !newTime) {
-    alert("Unesite ime i vreme");
-    return;
-  }
-
-  const clientIndex = parseInt(popup.dataset.clientIndex);
-  const isoDate = popup.dataset.clientDate;
-  const client = JSON.parse(popup.dataset.clientData);
-
-  if (clientData[isoDate] && clientIndex >= 0) {
-    clientData[isoDate][clientIndex] = {
-      name: newName,
-      time: newTime,
-      note: newNote
-    };
-    localStorage.setItem("clientData", JSON.stringify(clientData)); // opcionalno
-  }
-
-  renderClientsForCurrentWeek();
-  closeClientInfoPopup();
-}
-
 function toggleEditMode() {
   console.log("toggleEditMode pozvana");
   const popup = document.getElementById("clientInfoPopup");
@@ -616,11 +745,45 @@ function toggleEditMode() {
             firstDayOfWeek: 1,
             weekdays: {
               shorthand: ["Ned", "Pon", "Uto", "Sre", "Čet", "Pet", "Sub"],
-              longhand: ["Nedelja", "Ponedeljak", "Utorak", "Sreda", "Četvrtak", "Petak", "Subota"],
+              longhand: [
+                "Nedelja",
+                "Ponedeljak",
+                "Utorak",
+                "Sreda",
+                "Četvrtak",
+                "Petak",
+                "Subota",
+              ],
             },
             months: {
-              shorthand: ["Jan", "Feb", "Mar", "Apr", "Maj", "Jun", "Jul", "Avg", "Sep", "Okt", "Nov", "Dec"],
-              longhand: ["Januar", "Februar", "Mart", "April", "Maj", "Jun", "Jul", "Avgust", "Septembar", "Oktobar", "Novembar", "Decembar"],
+              shorthand: [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "Maj",
+                "Jun",
+                "Jul",
+                "Avg",
+                "Sep",
+                "Okt",
+                "Nov",
+                "Dec",
+              ],
+              longhand: [
+                "Januar",
+                "Februar",
+                "Mart",
+                "April",
+                "Maj",
+                "Jun",
+                "Jul",
+                "Avgust",
+                "Septembar",
+                "Oktobar",
+                "Novembar",
+                "Decembar",
+              ],
             },
           },
         });
@@ -632,7 +795,10 @@ function toggleEditMode() {
   } else {
     console.log("Vratio se u prikazni režim");
     actions.innerHTML = `
-      <button class="md3-button md3-button--text" onclick="event.stopPropagation(); markClientCompleted()">${popup.dataset.clientData && JSON.parse(popup.dataset.clientData).completed ? "Vrati u zakazano" : "Završeno"}</button>
+      <button class="md3-button md3-button--text" onclick="event.stopPropagation(); markClientCompleted()">${popup.dataset.clientData && JSON.parse(popup.dataset.clientData).completed
+        ? "Vrati u zakazano"
+        : "Završeno"
+      }</button>
       <button class="md3-button md3-button--text" onclick="event.stopPropagation(); toggleEditMode()">Izmeniti</button>
       <button class="md3-button md3-button--text" onclick="event.stopPropagation(); deleteClient(this.parentElement.parentElement)">Obriši</button>
     `;
@@ -649,9 +815,9 @@ async function markClientCompleted() {
 
   try {
     const response = await fetch(`/api/clients/${clientId}/complete`, {
-      method: 'PATCH',
+      method: "PATCH",
     });
-    if (!response.ok) throw new Error('Greška pri označavanju klijenta');
+    if (!response.ok) throw new Error("Greška pri označavanju klijenta");
     const updatedClient = await response.json();
 
     clientData[isoDate][clientIndex] = updatedClient;
@@ -661,8 +827,8 @@ async function markClientCompleted() {
     }
     closeClientInfoPopup();
   } catch (error) {
-    console.error('Greška pri označavanju klijenta:', error);
-    alert('Greška pri označavanju klijenta');
+    console.error("Greška pri označavanju klijenta:", error);
+    alert("Greška pri označavanju klijenta");
   }
 }
 
@@ -686,8 +852,8 @@ async function saveEditedClient() {
 
   try {
     const response = await fetch(`/api/clients/${clientId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         date: newDate,
         name: newName,
@@ -696,7 +862,7 @@ async function saveEditedClient() {
         completed: clientData[oldDate][clientIndex].completed,
       }),
     });
-    if (!response.ok) throw new Error('Greška pri ažuriranju klijenta');
+    if (!response.ok) throw new Error("Greška pri ažuriranju klijenta");
     const updatedClient = await response.json();
     // Ažuriraj clientData
     clientData[oldDate].splice(clientIndex, 1);
@@ -710,8 +876,8 @@ async function saveEditedClient() {
     }
     closeClientInfoPopup();
   } catch (error) {
-    console.error('Greška pri ažuriranju klijenta:', error);
-    alert('Greška pri ažuriranju klijenta');
+    console.error("Greška pri ažuriranju klijenta:", error);
+    alert("Greška pri ažuriranju klijenta");
   }
 }
 
@@ -761,7 +927,7 @@ function renderClientsList() {
   });
 
   // Dodaj današnji dan u listu datuma ako već nije prisutan
-  const allDates = [...new Set(allClients.map(client => client.isoDate))];
+  const allDates = [...new Set(allClients.map((client) => client.isoDate))];
   if (!allDates.includes(todayIso)) {
     allDates.push(todayIso);
   }
@@ -785,7 +951,7 @@ function renderClientsList() {
   ];
 
   // Prikaz svih datuma i klijenata hronološki
-  allDates.forEach(isoDate => {
+  allDates.forEach((isoDate) => {
     const date = new Date(isoDate);
     date.setHours(0, 0, 0, 0);
     const isToday = isoDate === todayIso;
@@ -804,7 +970,7 @@ function renderClientsList() {
     clientsList.appendChild(header);
 
     // Pronađi klijente za trenutni datum
-    const clientsForDate = allClients.filter(client => client.isoDate === isoDate);
+    const clientsForDate = allClients.filter((client) => client.isoDate === isoDate);
 
     // Ako nema klijenata za današnji dan, prikaži poruku
     if (isToday && clientsForDate.length === 0) {
@@ -815,7 +981,7 @@ function renderClientsList() {
     }
 
     // Dodaj klijente za trenutni datum
-    clientsForDate.forEach(client => {
+    clientsForDate.forEach((client) => {
       const div = document.createElement("div");
       div.classList.add("client-item");
       if (isToday) div.classList.add("today-client");
@@ -863,8 +1029,7 @@ function renderClientsList() {
       todayHeader.scrollIntoView({ behavior: "auto", block: "start" });
     }
     // Prisilno osveži skrolbar
-    clientsList.style.height = clientsList.offsetHeight + 'px';
-    clientsList.style.height = 'auto';
+    clientsList.style.height = clientsList.offsetHeight + "px";
+    clientsList.style.height = "auto";
   }, 10);
 }
-
