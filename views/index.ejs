@@ -52,6 +52,10 @@
                 <div class="cell"><h3>Ned <span class="date-label" id="date-sun"></span></h3><div class="event"></div></div>
             </div>
         </div>
+        <!-- Prikaz za unos novog klijenta -->
+        <div id="new-client-view" class="view hidden">
+            <button id="new-client-btn" class="new-client-button">Novi klijent</button>
+        </div>
         <!-- Prikaz liste klijenata -->
         <div id="clients-view" class="view hidden">
             <div class="clients-list" id="clientsList"></div>
@@ -73,6 +77,7 @@
         </div>
     </div>
 
+    <!-- Modal za zakazivanje termina -->
     <div class="modal hidden" id="dayModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -90,6 +95,26 @@
         </div>
     </div>
 
+    <!-- Modal za unos novog klijenta -->
+    <div class="modal hidden" id="newClientModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Unos novog klijenta</h3>
+                <span class="close-icon" onclick="closeNewClientModal()">
+                    <i class="fas fa-times"></i>
+                </span>
+            </div>
+            <input type="text" id="newClientName" placeholder="Ime i prezime" autocomplete="off" />
+            <input type="tel" id="newClientPhone" placeholder="Mobilni telefon" autocomplete="off" />
+            <input type="email" id="newClientEmail" placeholder="E-mail" autocomplete="off" />
+            <div class="modal-actions">
+                <button onclick="saveNewClient()">Sačuvaj</button>
+                <button onclick="closeNewClientModal()">Otkaži</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal za prikaz informacija o klijentu -->
     <div class="modal hidden" id="clientInfoPopup"></div>
 
     <script src="/js/main.js"></script>
