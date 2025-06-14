@@ -23,7 +23,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/clients', (req, res) => {
-  res.render('clients');
+  res.redirect('/');
 });
 
 app.use('/api/clients', clientRoutes);
