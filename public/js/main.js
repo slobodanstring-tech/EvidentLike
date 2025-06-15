@@ -297,13 +297,13 @@ function updateWeekdayDates(baseDate) {
 function generateMiniCalendar(year, month) {
   const daysContainer = document.getElementById("calendar-days");
   if (!daysContainer) {
-    console.error("Greška: calendar-days element nije pronađen!");
+    console.error("Greška: calendar-days element nije pronađen! Proveri index.ejs za id='calendar-days'.");
     return;
   }
 
   console.log("Generisanje kalendara za godinu:", year, "mesec:", month);
-
   daysContainer.innerHTML = "";
+
   const firstDay = new Date(year, month, 1);
   const startDay = (firstDay.getDay() + 6) % 7; // Ponedeljak kao prvi dan
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -330,20 +330,16 @@ function generateMiniCalendar(year, month) {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    if (
-      d === today.getDate() &&
-      month === today.getMonth() &&
-      year === today.getFullYear()
-    ) {
+    if (d === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
       day.classList.add("today");
     }
 
     daysContainer.appendChild(day);
   }
 
-  // Fill trailing empty cells with next month days
+  // Next month's trailing days
   const totalCells = daysContainer.children.length;
-  const remaining = 42 - totalCells;
+  const remaining = 42 - totalCells; // 6 redova po 7 dana
   for (let i = 1; i <= remaining; i++) {
     const date = new Date(year, month + 1, i);
     const nextDay = document.createElement("div");
@@ -353,44 +349,32 @@ function generateMiniCalendar(year, month) {
     daysContainer.appendChild(nextDay);
   }
 
-  // Ispravka: Koristi document.querySelector umesto document.get
+  // Ažuriraj naziv meseca
   const monthName = document.querySelector("span#month-name");
   if (monthName) {
     const monthNames = [
-      "Januar",
-      "Februar",
-      "Mart",
-      "April",
-      "Maj",
-      "Jun",
-      "Jul",
-      "Avgust",
-      "Septembar",
-      "Oktobar",
-      "Novembar",
-      "Decembar",
+      "Januar", "Februar", "Mart", "April", "Maj", "Jun",
+      "Jul", "Avgust", "Septembar", "Oktobar", "Novembar", "Decembar",
     ];
     monthName.textContent = monthNames[month];
   } else {
     console.warn("month-name element nije pronađen u DOM-u!");
   }
 
+  // Dodaj event listenere za sve dane
   const allDays = daysContainer.querySelectorAll(".calendar-day");
   allDays.forEach((day) => {
     day.addEventListener("click", () => {
       const clickedDate = new Date(day.dataset.fullDate);
       clickedDate.setHours(0, 0, 0, 0);
       currentDate = clickedDate;
-      console.log(
-        "Klik na dan u mini kalendaru, currentDate:",
-        currentDate.toISOString()
-      );
+      console.log("Klik na dan u mini kalendaru, currentDate:", currentDate.toISOString());
       updateWeekdayDates(clickedDate);
       highlightWeekInCalendar(clickedDate);
     });
   });
 
-  // Ažuriraj nedelju na osnovu trenutnog currentDate
+  // Ažuriraj nedelju i dane
   updateWeekdayDates(currentDate);
   highlightWeekInCalendar(currentDate);
 }
@@ -408,8 +392,12 @@ function highlightWeekInCalendar(referenceDate) {
     const cell = document.querySelector(`.calendar-day[data-full-date="${iso}"]`);
     if (cell) {
       cell.classList.add("week-selected");
+      console.log(`Označavam dan u mini kalendaru: ${iso}`);
+    } else {
+      console.warn(`Ćelija za datum ${iso} nije pronađena u mini kalendaru`);
     }
   }
+  console.log("Označeni dani:", Array.from(document.querySelectorAll(".calendar-day.week-selected")).map(el => el.dataset.fullDate));
 }
 
 const prevBtn = document.getElementById("prev-month");
