@@ -41,7 +41,7 @@ function switchView(view) {
     }
   });
 
-  // Ažuriraj navigacionu traku, isključujući "clients"
+  // Ažuriraj navigacionu traku
   navItems.forEach((item) => {
     item.classList.remove("active");
     const icon = item.querySelector("i");
@@ -50,16 +50,13 @@ function switchView(view) {
       icon.classList.remove("active");
       span.classList.remove("active");
     }
-    // Dodaj klasu active samo ako nije "clients" ili ako je "clients" za new-client-view
-    if ((item.dataset.view === view && item.dataset.view !== "clients") || (item.dataset.view === "clients" && view === "clients")) {
+    if (item.dataset.view === view) {
       console.log(`Aktiviram nav-item: ${item.dataset.view}`);
       item.classList.add("active");
       if (icon && span) {
         icon.classList.add("active");
         span.classList.add("active");
       }
-    } else {
-      console.log(`Ne aktiviram nav-item: ${item.dataset.view}`);
     }
   });
 
@@ -82,6 +79,11 @@ function switchView(view) {
       generateMiniCalendar(currentDate.getFullYear(), currentDate.getMonth());
       updateWeekdayDates(currentDate);
     }
+  }
+
+  // Dodaj prikaz klijenata ispod dugmeta za 'clients' view
+  if (view === "clients") {
+    renderClientsBelowButton();
   }
 }
 
@@ -1364,3 +1366,58 @@ async function saveNewClient() {
   }
 }
 
+function renderClientsBelowButton() {
+  const clientsBelowBtn = document.getElementById('clients-below-btn');
+  if (!clientsBelowBtn) {
+    console.error('Div #clients-below-btn nije pronađen.');
+    return;
+  }
+
+  clientsBelowBtn.innerHTML = '';
+
+  if (!clientData || Object.keys(clientData).length === 0) {
+    clientsBelowBtn.innerHTML = '<p>Nema klijenata u bazi.</p>';
+    return;
+  }
+
+  // Kreiraj mapu jedinstvenih klijenata po imenu ili telefonu
+  const uniqueClients = new Map();
+  Object.keys(clientData).forEach(date => {
+    clientData[date].forEach(client => {
+      const key = client.phone || client.name;
+      if (!uniqueClients.has(key)) {
+        uniqueClients.set(key, {
+          name: client.name,
+          phone: client.phone || 'Nema broja'
+        });
+      }
+    });
+  });
+
+  // Ograničenja za broj karaktera
+  const maxNameLength = 20;
+  const maxPhoneLength = 15;
+
+  // Prikazi listu klijenata
+  uniqueClients.forEach(client => {
+    const clientDiv = document.createElement('div');
+    clientDiv.classList.add('client-item');
+
+    // Skraćivanje imena i telefona
+    const displayName = client.name.length > maxNameLength
+      ? client.name.substring(0, maxNameLength) + '...'
+      : client.name;
+    const displayPhone = client.phone.length > maxPhoneLength
+      ? client.phone.substring(0, maxPhoneLength) + '...'
+      : client.phone;
+
+    clientDiv.innerHTML = `
+          <span class="client-name">${displayName}</span>
+          <span class="client-phone">${displayPhone}</span>
+      `;
+    clientDiv.addEventListener('click', () => {
+      alert(`Klijent: ${client.name}, Telefon: ${client.phone}`);
+    });
+    clientsBelowBtn.appendChild(clientDiv);
+  });
+}
