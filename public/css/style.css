@@ -1766,4 +1766,108 @@ body {
   scrollbar-width: none;
 }
 
-/* ... OSTALI POSTOJEĆI STILOVI ... */
+/* ... OSTALI POSTOJEĆI STILOVI ... */#new-client-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Osigurava da zauzme celu visinu */
+    overflow: hidden; /* Sprečava preklapanje */
+}
+
+#new-client-btn {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    margin: 10px;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#clients-below-btn {
+    flex-grow: 1;
+    overflow-y: auto; /* Omogućava skrolovanje liste */
+    padding: 10px;
+    width: 100dvw;
+}
+#clients-below-btn .client-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  cursor: pointer;
+}
+
+#clients-below-btn .client-item:hover {
+  background-color: #f5f5f5;
+}
+
+/* Osiguraj da main-content ima definisanu visinu */
+#main-content {
+  height: calc(100vh - 100px); /* Prilagođeno za top-bar i bottom-bar */
+  overflow: hidden;
+}
+
+/* New-client-view kao fleks kontejner */
+#new-client-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Zauzima celu visinu main-content */
+  overflow: hidden;
+}
+
+/* Dugme fiksirano na vrhu */
+#new-client-btn {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: 10px;
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* Lista klijenata sa skrolovanjem */
+#clients-below-btn {
+  flex-grow: 1;
+  overflow-y: auto; /* Omogućava vertikalno skrolovanje */
+  padding: 10px;
+  -webkit-overflow-scrolling: touch; /* Glatko skrolovanje na mobilnim uređajima */
+}
+
+/* Stilovi za stavke u listi */
+#clients-below-btn .client-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  cursor: pointer;
+}
+
+#clients-below-btn .client-item:hover {
+  background-color: #f5f5f5;
+}
+
+/* Ograničenje teksta */
+#clients-below-btn .client-name,
+#clients-below-btn .client-phone {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 50%;
+}
+
+#clients-below-btn .client-name {
+  flex: 1;
+  margin-right: 10px;
+}
+
+#clients-below-btn .client-phone {
+  flex: 1;
+  text-align: right;
+}
