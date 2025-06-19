@@ -1,6 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const Client = require('../models/Client');
+// Ruta za dohvatanje jedinstvenih klijenata
+router.get('/unique', async (req, res) => {
+  try {
+    const clients = await Client.find()
+      .select('name phone createdAt')
+      .sort({ name: 1 }) // Sortiranje po imenu u rastućem redosledu
+      .lean();
+    const uniqueClients = Array.from(
+      new Map(clients.map(client => [client.phone || client.name, client])).values()
+    );
+    res.json(uniqueClients);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 // GET svih klijenata
 router.get('/', async (req, res) => {
