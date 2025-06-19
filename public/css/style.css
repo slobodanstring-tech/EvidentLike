@@ -1957,3 +1957,13 @@ html, body {
   text-align: right;
 }
 
+
+.search-input {
+  width: 100%;
+  max-width: 300px;
+  padding: 8px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+}

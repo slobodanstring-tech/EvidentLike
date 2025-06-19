@@ -6,10 +6,10 @@ router.get('/unique', async (req, res) => {
   try {
     const clients = await Client.find()
       .select('name phone createdAt')
-      .sort({ name: 1 }) // Sortiranje po imenu u rastućem redosledu
+      .sort({ name: 1 })
       .lean();
     const uniqueClients = Array.from(
-      new Map(clients.map(client => [client.phone || client.name, client])).values()
+      new Map(clients.map(client => [client._id, client])).values()
     );
     res.json(uniqueClients);
   } catch (err) {

@@ -193,6 +193,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (error) {
     console.error("Greška pri inicijalizaciji:", error);
   }
+  const clientSearchInput = document.getElementById("client-search");
+  if (clientSearchInput) {
+    console.log("Pronađen client-search input, postavljanje event listenera");
+    clientSearchInput.addEventListener("input", (e) => {
+      const searchTerm = e.target.value;
+      console.log("Pretraga klijenata, termin:", searchTerm);
+      renderClientsBelowButton(searchTerm);
+    });
+  } else {
+    console.warn("client-search input nije pronađen u DOM-u! Pretraga neće biti dostupna.");
+  }
 });
 
 // Ažuriraj renderClientsForCurrentWeek da koristi delegaciju događaja za .client-entry
@@ -1352,6 +1363,7 @@ async function saveNewClient() {
     clientData[isoDate].push(savedClient);
     console.log("clientData ažuriran:", clientData);
 
+    // Zatvori modal
     closeNewClientModal();
     alert("Klijent uspešno sačuvan!");
 
@@ -1359,6 +1371,11 @@ async function saveNewClient() {
     renderClientsForCurrentWeek();
     if (document.getElementById("clients-view").classList.contains("active")) {
       renderClientsList();
+    }
+    // DODATO: Osveži listu klijenata u new-client-view ako je aktivan
+    if (document.getElementById("new-client-view").classList.contains("active")) {
+      const searchTerm = document.getElementById("client-search")?.value || '';
+      renderClientsBelowButton(searchTerm);
     }
   } catch (error) {
     console.error("Greška pri čuvanju klijenta:", error.message);
@@ -1381,13 +1398,14 @@ async function fetchUniqueClients() {
 
 // Ažuriranje renderClientsBelowButton za tri kolone
 async function renderClientsBelowButton(searchTerm = '') {
+  console.log("Pokrećem renderClientsBelowButton sa searchTerm:", searchTerm);
   const clientsBelowBtn = document.getElementById('clients-below-btn');
   if (!clientsBelowBtn) {
     console.error('Div #clients-below-btn nije pronađen.');
     return;
   }
 
-  clientsBelowBtn.innerHTML = '<p>Učitavanje...</p>';
+  clientsBelowBtn.innerHTML = '<p class="loading">Učitavanje...</p>';
 
   const uniqueClients = await fetchUniqueClients();
   clientsBelowBtn.innerHTML = '';
@@ -1400,33 +1418,51 @@ async function renderClientsBelowButton(searchTerm = '') {
   const maxNameLength = 20;
   const maxPhoneLength = 15;
 
-  // Sortiranje klijenata po imenu (abcd redosled)
-  uniqueClients.sort((a, b) => a.name.localeCompare(b.name, 'sr', { sensitivity: 'base' }));
+  // Filtriranje i sortiranje po relevantnosti
+  let filteredClients = uniqueClients;
+  if (searchTerm) {
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    filteredClients = uniqueClients
+      .map(client => {
+        const nameMatch = client.name.toLowerCase();
+        const phoneMatch = (client.phone || '').toLowerCase();
+        // Računamo "score" za relevantnost
+        let score = 0;
+        if (nameMatch.startsWith(lowerSearchTerm)) score += 10; // Prioritet za početak imena
+        else if (nameMatch.includes(lowerSearchTerm)) score += 5; // Podudaranje u imenu
+        if (phoneMatch.startsWith(lowerSearchTerm)) score += 8; // Prioritet za početak telefona
+        else if (phoneMatch.includes(lowerSearchTerm)) score += 3; // Podudaranje u telefonu
+        return { client, score };
+      })
+      .filter(item => item.score > 0) // Zadrži samo podudaranja
+      .sort((a, b) => {
+        // Sortiraj po score-u (opadajuće), zatim po imenu (A-Z)
+        if (b.score !== a.score) return b.score - a.score;
+        return a.client.name.localeCompare(b.client.name, 'sr', { sensitivity: 'base' });
+      })
+      .map(item => item.client); // Vrati samo klijente
+  } else {
+    // Ako nema pretrage, sortiraj po imenu
+    filteredClients.sort((a, b) => a.name.localeCompare(b.name, 'sr', { sensitivity: 'base' }));
+  }
 
-  uniqueClients.forEach(client => {
-    // Filtriranje po pretrazi
-    if (
-      searchTerm &&
-      !client.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      !(client.phone || '').toLowerCase().includes(searchTerm.toLowerCase())
-    ) {
-      return;
-    }
+  if (filteredClients.length === 0) {
+    clientsBelowBtn.innerHTML = '<p>Nema rezultata za pretragu.</p>';
+    return;
+  }
 
+  filteredClients.forEach(client => {
     const clientDiv = document.createElement('div');
     clientDiv.classList.add('client-item');
 
-    // Skraćivanje imena
     const displayName = client.name.length > maxNameLength
       ? client.name.substring(0, maxNameLength) + '...'
       : client.name;
 
-    // Skraćivanje telefona
     const displayPhone = client.phone && client.phone !== 'Nema broja' && client.phone.length > maxPhoneLength
       ? client.phone.substring(0, maxPhoneLength) + '...'
       : client.phone || 'Nema broja';
 
-    // Formatiranje datuma kreiranja
     const createdAt = client.createdAt ? new Date(client.createdAt) : null;
     const displayDate = createdAt
       ? createdAt.toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit', year: 'numeric' })
