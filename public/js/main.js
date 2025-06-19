@@ -1366,57 +1366,79 @@ async function saveNewClient() {
   }
 }
 
-function renderClientsBelowButton() {
+// Dohvatanje jedinstvenih klijenata
+async function fetchUniqueClients() {
+  try {
+    const response = await fetch('/api/clients/unique');
+    if (!response.ok) throw new Error('Neuspešan zahtev');
+    const data = await response.json();
+    return data;
+  } catch (err) {
+    console.error('Error fetching unique clients:', err);
+    return [];
+  }
+}
+
+// Ažuriranje renderClientsBelowButton za tri kolone
+async function renderClientsBelowButton(searchTerm = '') {
   const clientsBelowBtn = document.getElementById('clients-below-btn');
   if (!clientsBelowBtn) {
     console.error('Div #clients-below-btn nije pronađen.');
     return;
   }
 
+  clientsBelowBtn.innerHTML = '<p>Učitavanje...</p>';
+
+  const uniqueClients = await fetchUniqueClients();
   clientsBelowBtn.innerHTML = '';
 
-  if (!clientData || Object.keys(clientData).length === 0) {
+  if (!uniqueClients || uniqueClients.length === 0) {
     clientsBelowBtn.innerHTML = '<p>Nema klijenata u bazi.</p>';
     return;
   }
 
-  // Kreiraj mapu jedinstvenih klijenata po imenu ili telefonu
-  const uniqueClients = new Map();
-  Object.keys(clientData).forEach(date => {
-    clientData[date].forEach(client => {
-      const key = client.phone || client.name;
-      if (!uniqueClients.has(key)) {
-        uniqueClients.set(key, {
-          name: client.name,
-          phone: client.phone || 'Nema broja'
-        });
-      }
-    });
-  });
-
-  // Ograničenja za broj karaktera
   const maxNameLength = 20;
   const maxPhoneLength = 15;
 
-  // Prikazi listu klijenata
+  // Sortiranje klijenata po imenu (abcd redosled)
+  uniqueClients.sort((a, b) => a.name.localeCompare(b.name, 'sr', { sensitivity: 'base' }));
+
   uniqueClients.forEach(client => {
+    // Filtriranje po pretrazi
+    if (
+      searchTerm &&
+      !client.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      !(client.phone || '').toLowerCase().includes(searchTerm.toLowerCase())
+    ) {
+      return;
+    }
+
     const clientDiv = document.createElement('div');
     clientDiv.classList.add('client-item');
 
-    // Skraćivanje imena i telefona
+    // Skraćivanje imena
     const displayName = client.name.length > maxNameLength
       ? client.name.substring(0, maxNameLength) + '...'
       : client.name;
-    const displayPhone = client.phone.length > maxPhoneLength
+
+    // Skraćivanje telefona
+    const displayPhone = client.phone && client.phone !== 'Nema broja' && client.phone.length > maxPhoneLength
       ? client.phone.substring(0, maxPhoneLength) + '...'
-      : client.phone;
+      : client.phone || 'Nema broja';
+
+    // Formatiranje datuma kreiranja
+    const createdAt = client.createdAt ? new Date(client.createdAt) : null;
+    const displayDate = createdAt
+      ? createdAt.toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : 'Nepoznato';
 
     clientDiv.innerHTML = `
-          <span class="client-name">${displayName}</span>
-          <span class="client-phone">${displayPhone}</span>
-      `;
+      <span class="client-name" title="${client.name}">${displayName}</span>
+      <span class="client-phone" title="${client.phone || 'Nema broja'}">${displayPhone}</span>
+      <span class="client-created" title="${displayDate}">${displayDate}</span>
+    `;
     clientDiv.addEventListener('click', () => {
-      alert(`Klijent: ${client.name}, Telefon: ${client.phone}`);
+      alert(`Klijent: ${client.name}, Telefon: ${client.phone || 'Nema broja'}, Kreiran: ${displayDate}`);
     });
     clientsBelowBtn.appendChild(clientDiv);
   });
