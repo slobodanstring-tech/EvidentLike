@@ -13,16 +13,20 @@ function switchView(view) {
   const navItems = document.querySelectorAll(".nav-item");
   const calendarTop = document.getElementById("calendar-top");
   const clientsTop = document.querySelector(".clients-top");
-  const allClientsBtn = document.getElementById("all-clients-btn");
+  const newClientTop = document.querySelector(".new-client-top");
   const rightTop = document.getElementById("right-top");
+  const filterTop = document.querySelector(".filter-top"); // Novo
+  const allClientsBtn = document.getElementById("all-clients-btn");
 
   // Provera da li su svi elementi prisutni
-  if (!calendarTop || !clientsTop || !allClientsBtn || !rightTop) {
+  if (!calendarTop || !clientsTop || !newClientTop || !rightTop || !filterTop || !allClientsBtn) {
     console.error("Greška: Neki elementi top-bara nisu pronađeni!", {
       calendarTop: !!calendarTop,
       clientsTop: !!clientsTop,
-      allClientsBtn: !!allClientsBtn,
+      newClientTop: !!newClientTop,
       rightTop: !!rightTop,
+      filterTop: !!filterTop,
+      allClientsBtn: !!allClientsBtn,
     });
     return;
   }
@@ -66,24 +70,34 @@ function switchView(view) {
     console.log("Sakrivam all-clients-btn i prikazujem clients-top");
     calendarTop.classList.add("hidden");
     clientsTop.classList.remove("hidden");
+    newClientTop.classList.add("hidden");
+    rightTop.classList.remove("hidden"); // Prikazuj right-top
+    filterTop.classList.add("hidden"); // Sakrij filter-top
     allClientsBtn.classList.add("hidden");
     rightTop.classList.add("clients-mode");
     renderClientsList();
+  } else if (view === "clients") {
+    console.log("Sakrivam calendar-top i right-top, prikazujem new-client-top i filter-top");
+    calendarTop.classList.add("hidden");
+    clientsTop.classList.add("hidden");
+    newClientTop.classList.remove("hidden");
+    rightTop.classList.add("hidden"); // Sakrij right-top
+    filterTop.classList.remove("hidden"); // Prikazuj filter-top
+    allClientsBtn.classList.add("hidden"); // Sakrij all-clients-btn
+    renderClientsBelowButton();
   } else {
-    console.log("Prikazujem all-clients-btn i sakrivam clients-top");
+    console.log("Prikazujem calendar-top i right-top, sakrivam clients-top, new-client-top i filter-top");
     calendarTop.classList.remove("hidden");
     clientsTop.classList.add("hidden");
+    newClientTop.classList.add("hidden");
+    rightTop.classList.remove("hidden"); // Prikazuj right-top
+    filterTop.classList.add("hidden"); // Sakrij filter-top
     allClientsBtn.classList.remove("hidden");
     rightTop.classList.remove("clients-mode");
-    if (view !== "clients") {
+    if (view !== "expenses") {
       generateMiniCalendar(currentDate.getFullYear(), currentDate.getMonth());
       updateWeekdayDates(currentDate);
     }
-  }
-
-  // Dodaj prikaz klijenata ispod dugmeta za 'clients' view
-  if (view === "clients") {
-    renderClientsBelowButton();
   }
 }
 
@@ -100,6 +114,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     currentDate = today;
     generateMiniCalendar(today.getFullYear(), today.getMonth());
     updateWeekdayDates(today);
+
+    // Funkcija za otvaranje newClientModal
+    const openNewClientModal = () => {
+      console.log("Otvaram newClientModal");
+      const modal = document.getElementById("newClientModal");
+      if (modal) {
+        modal.classList.remove("hidden");
+        modal.classList.add("active");
+        document.getElementById("newClientName").focus();
+      } else {
+        console.error("newClientModal nije pronađen!");
+      }
+    };
 
     // Postavi event listener za all-clients-btn
     const allClientsBtn = document.getElementById("all-clients-btn");
@@ -157,16 +184,22 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     });
 
-    // Dodaj event listener za new-client-btn
+    // Postavi event listener za new-client-btn
     const newClientBtn = document.getElementById("new-client-btn");
     if (newClientBtn) {
       console.log("Pronađen new-client-btn, postavljanje event listenera");
-      newClientBtn.addEventListener("click", () => {
-        console.log("Kliknuto na dugme 'Novi klijent'");
-        openNewClientModal();
-      });
+      newClientBtn.addEventListener("click", openNewClientModal);
     } else {
-      console.error("new-client-btn NIJE PRONAĐEN u DOM-u! Proveri index.ejs za id='new-client-btn'.");
+      console.warn("new-client-btn NIJE PRONAĐEN u DOM-u! Proveri index.ejs za id='new-client-btn'.");
+    }
+
+    // Postavi event listener za new-client-btn-top
+    const newClientBtnTop = document.getElementById("new-client-btn-top");
+    if (newClientBtnTop) {
+      console.log("Pronađen new-client-btn-top, postavljanje event listenera");
+      newClientBtnTop.addEventListener("click", openNewClientModal);
+    } else {
+      console.warn("new-client-btn-top NIJE PRONAĐEN u DOM-u! Proveri index.ejs za id='new-client-btn-top'.");
     }
 
     // Dodaj delegaciju događaja za klik na naslov dana
@@ -190,19 +223,37 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.error("Greška: .grid element nije pronađen!");
     }
 
+    // Dodaj event listener za pretragu klijenata
+    const clientSearchInput = document.getElementById("client-search");
+    if (clientSearchInput) {
+      console.log("Pronađen client-search input, postavljanje event listenera");
+      clientSearchInput.addEventListener("input", (e) => {
+        const searchTerm = e.target.value;
+        console.log("Pretraga klijenata, termin:", searchTerm);
+        const filterSelect = document.getElementById("client-filter");
+        const filterValue = filterSelect ? filterSelect.value : "all";
+        renderClientsBelowButton(searchTerm, filterValue);
+      });
+    } else {
+      console.warn("client-search input nije pronađen u DOM-u! Pretraga neće biti dostupna.");
+    }
+
+    // Dodaj event listener za dropdown filter
+    const clientFilter = document.getElementById("client-filter");
+    if (clientFilter) {
+      console.log("Pronađen client-filter, postavljanje event listenera");
+      clientFilter.addEventListener("change", (e) => {
+        const filterValue = e.target.value;
+        console.log("Promena filtera, vrednost:", filterValue);
+        const searchTerm = clientSearchInput ? clientSearchInput.value : '';
+        renderClientsBelowButton(searchTerm, filterValue);
+      });
+    } else {
+      console.warn("client-filter NIJE PRONAĐEN u DOM-u! Proveri index.ejs za id='client-filter'.");
+    }
+
   } catch (error) {
     console.error("Greška pri inicijalizaciji:", error);
-  }
-  const clientSearchInput = document.getElementById("client-search");
-  if (clientSearchInput) {
-    console.log("Pronađen client-search input, postavljanje event listenera");
-    clientSearchInput.addEventListener("input", (e) => {
-      const searchTerm = e.target.value;
-      console.log("Pretraga klijenata, termin:", searchTerm);
-      renderClientsBelowButton(searchTerm);
-    });
-  } else {
-    console.warn("client-search input nije pronađen u DOM-u! Pretraga neće biti dostupna.");
   }
 });
 
@@ -1307,7 +1358,14 @@ function closeNewClientModal() {
     console.error("newClientModal nije pronađen!");
   }
 }
-
+function showToast(message, type = 'success') {
+  console.log(`Prikazujem toast: ${message} (${type})`);
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
 async function saveNewClient() {
   console.log("Pokrećem saveNewClient");
   const name = document.getElementById("newClientName").value.trim();
@@ -1316,21 +1374,21 @@ async function saveNewClient() {
 
   if (!name) {
     console.warn("Ime i prezime su obavezni!");
-    alert("Ime i prezime su obavezni!");
+    showToast("Ime i prezime su obavezni!", "error");
     return;
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (email && !emailRegex.test(email)) {
     console.warn("Nevažeća e-mail adresa:", email);
-    alert("Unesite važeću e-mail adresu!");
+    showToast("Unesite važeću e-mail adresu!", "error");
     return;
   }
 
   const phoneRegex = /^\+?[\d\s-]{9,}$/;
   if (phone && !phoneRegex.test(phone)) {
     console.warn("Nevažeći broj telefona:", phone);
-    alert("Unesite važeći broj telefona!");
+    showToast("Unesite važeći broj telefona!", "error");
     return;
   }
 
@@ -1345,6 +1403,7 @@ async function saveNewClient() {
   };
 
   try {
+    console.log("Šaljem POST zahtev na /api/clients/new sa podacima:", newClient);
     const response = await fetch("/api/clients/new", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1365,21 +1424,32 @@ async function saveNewClient() {
 
     // Zatvori modal
     closeNewClientModal();
-    alert("Klijent uspešno sačuvan!");
+    console.log("Modal zatvoren");
+
+    // Prikazi notifikaciju
+    showToast("Klijent uspešno sačuvan!", "success");
 
     // Osveži prikaze
+    console.log("Osvežavam kalendar putem renderClientsForCurrentWeek");
     renderClientsForCurrentWeek();
+
     if (document.getElementById("clients-view").classList.contains("active")) {
+      console.log("clients-view je aktivan, osvežavam listu klijenata putem renderClientsList");
       renderClientsList();
+    } else {
+      console.log("clients-view nije aktivan");
     }
-    // DODATO: Osveži listu klijenata u new-client-view ako je aktivan
+
     if (document.getElementById("new-client-view").classList.contains("active")) {
       const searchTerm = document.getElementById("client-search")?.value || '';
+      console.log("new-client-view je aktivan, osvežavam listu klijenata putem renderClientsBelowButton sa searchTerm:", searchTerm);
       renderClientsBelowButton(searchTerm);
+    } else {
+      console.log("new-client-view nije aktivan");
     }
   } catch (error) {
     console.error("Greška pri čuvanju klijenta:", error.message);
-    alert(`Greška pri čuvanju klijenta: ${error.message}`);
+    showToast(`Greška pri čuvanju klijenta: ${error.message}`, "error");
   }
 }
 
@@ -1397,8 +1467,8 @@ async function fetchUniqueClients() {
 }
 
 // Ažuriranje renderClientsBelowButton za tri kolone
-async function renderClientsBelowButton(searchTerm = '') {
-  console.log("Pokrećem renderClientsBelowButton sa searchTerm:", searchTerm);
+async function renderClientsBelowButton(searchTerm = '', filterValue = 'all') {
+  console.log("Pokrećem renderClientsBelowButton sa searchTerm:", searchTerm, "filterValue:", filterValue);
   const clientsBelowBtn = document.getElementById('clients-below-btn');
   if (!clientsBelowBtn) {
     console.error('Div #clients-below-btn nije pronađen.');
@@ -1418,7 +1488,7 @@ async function renderClientsBelowButton(searchTerm = '') {
   const maxNameLength = 20;
   const maxPhoneLength = 15;
 
-  // Filtriranje i sortiranje po relevantnosti
+  // Filtriranje po searchTerm
   let filteredClients = uniqueClients;
   if (searchTerm) {
     const lowerSearchTerm = searchTerm.toLowerCase();
@@ -1426,25 +1496,27 @@ async function renderClientsBelowButton(searchTerm = '') {
       .map(client => {
         const nameMatch = client.name.toLowerCase();
         const phoneMatch = (client.phone || '').toLowerCase();
-        // Računamo "score" za relevantnost
         let score = 0;
-        if (nameMatch.startsWith(lowerSearchTerm)) score += 10; // Prioritet za početak imena
-        else if (nameMatch.includes(lowerSearchTerm)) score += 5; // Podudaranje u imenu
-        if (phoneMatch.startsWith(lowerSearchTerm)) score += 8; // Prioritet za početak telefona
-        else if (phoneMatch.includes(lowerSearchTerm)) score += 3; // Podudaranje u telefonu
+        if (nameMatch.startsWith(lowerSearchTerm)) score += 10;
+        else if (nameMatch.includes(lowerSearchTerm)) score += 5;
+        if (phoneMatch.startsWith(lowerSearchTerm)) score += 8;
+        else if (phoneMatch.includes(lowerSearchTerm)) score += 3;
         return { client, score };
       })
-      .filter(item => item.score > 0) // Zadrži samo podudaranja
+      .filter(item => item.score > 0)
       .sort((a, b) => {
-        // Sortiraj po score-u (opadajuće), zatim po imenu (A-Z)
         if (b.score !== a.score) return b.score - a.score;
         return a.client.name.localeCompare(b.client.name, 'sr', { sensitivity: 'base' });
       })
-      .map(item => item.client); // Vrati samo klijente
-  } else {
-    // Ako nema pretrage, sortiraj po imenu
-    filteredClients.sort((a, b) => a.name.localeCompare(b.name, 'sr', { sensitivity: 'base' }));
+      .map(item => item.client);
   }
+
+  // Sortiranje prema filterValue
+  if (filterValue === 'newest') {
+    filteredClients.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  } else if (filterValue === 'name') {
+    filteredClients.sort((a, b) => a.name.localeCompare(b.name, 'sr', { sensitivity: 'base' }));
+  } // 'all' zadržava poredak nakon pretrage ili podrazumevani
 
   if (filteredClients.length === 0) {
     clientsBelowBtn.innerHTML = '<p>Nema rezultata za pretragu.</p>';
