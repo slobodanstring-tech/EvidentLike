@@ -25,9 +25,20 @@
             <button class="back-btn" onclick="switchView('calendar')"><i class="fas fa-arrow-left"></i> Nazad</button>
             <h2>Lista klijenata</h2>
         </div>
+        <div class="new-client-top hidden">
+            <button id="new-client-btn" class="new-client-button">Novi klijent</button>
+            <h2>Klijenti</h2>
+        </div>
         <div class="right-top" id="right-top">
             <button id="all-clients-btn" class="top-bar-btn"><i class="fas fa-list"></i></button>
             <button id="today-btn" class="top-bar-btn">Danas</button>
+        </div>
+        <div class="filter-top hidden">
+            <select id="client-filter" class="filter-select">
+                <option value="all">Svi klijenti</option>
+                <option value="newest">Najnoviji</option>
+                <option value="name">Po imenu</option>
+            </select>
         </div>
     </div>
 
@@ -52,9 +63,8 @@
                 <div class="cell"><h3>Ned <span class="date-label" id="date-sun"></span></h3><div class="event"></div></div>
             </div>
         </div>
-       
+        <!-- Prikaz baze klijenata -->
         <div id="new-client-view" class="view hidden">
-            <button id="new-client-btn" class="new-client-button">Novi klijent</button>
             <input type="text" id="client-search" placeholder="Pretraži klijente..." class="search-input">
             <div id="clients-below-btn"></div>
         </div>
