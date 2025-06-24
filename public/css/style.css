@@ -366,6 +366,7 @@
   font-weight: 500;
   line-height: 32px;
   color: #1c2526; /* on-surface */
+  overflow: hidden;
 }
 
 /* Content */
@@ -2025,3 +2026,4 @@ html, body {
 .new-client-button:hover {
   background-color: #0056b3;
 }
+
