@@ -9,32 +9,54 @@ const clientSchema = new mongoose.Schema({
   phone: {
     type: String,
     trim: true,
-    match: [/^\+?[\d\s-]{9,}$/, 'Unesite važeći broj telefona'],
+    default: null,
   },
   email: {
     type: String,
     trim: true,
-    match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Unesite važeću e-mail adresu'],
+    default: null,
   },
-  date: {
-    type: String, // ISO datum, npr. "2025-06-13"
-    default: () => new Date().toISOString().split('T')[0],
-  },
-  time: {
+  gender: {
     type: String,
-    default: '00:00',
+    enum: ['male', 'female', null],
+    default: null,
+  },
+  birthday: {
+    type: String, // Čuvamo kao "YYYY-MM-DD"
+    trim: true,
+    default: null,
+  },
+  address: {
+    type: String,
+    trim: true,
+    default: null,
+  },
+  allergy: {
+    type: String,
+    trim: true,
+    default: null,
   },
   note: {
     type: String,
     trim: true,
-    default: '',
+    default: null,
+  },
+  date: {
+    type: String, // ISO format "YYYY-MM-DD"
+    required: true,
+  },
+  time: {
+    type: String, // Format "HH:mm"
+    required: true,
   },
   completed: {
     type: Boolean,
     default: false,
   },
-}, {
-  timestamps: true,
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 module.exports = mongoose.model('Client', clientSchema);
