@@ -116,17 +116,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateWeekdayDates(today);
 
     // Funkcija za otvaranje newClientModal
-    const openNewClientModal = () => {
-      console.log("Otvaram newClientModal");
+    function openNewClientModal() {
+      console.log("Pokrećem openNewClientModal");
       const modal = document.getElementById("newClientModal");
       if (modal) {
+        console.log("newClientModal pronađen, uklanjam 'hidden' i dodajem 'active'");
         modal.classList.remove("hidden");
         modal.classList.add("active");
-        document.getElementById("newClientName").focus();
+        const nameInput = document.getElementById("newClientName");
+        const birthdayInput = document.getElementById("newClientBirthday");
+        if (nameInput) {
+          console.log("Fokusiram na newClientName input");
+          nameInput.focus();
+        } else {
+          console.error("newClientName input nije pronađen!");
+        }
+        // Inicijalizuj Flatpickr za rođendan
+        if (birthdayInput && !birthdayInput._flatpickr) {
+          console.log("Inicijalizujem Flatpickr za newClientBirthday");
+          flatpickr(birthdayInput, {
+            dateFormat: "Y-m-d",
+            locale: { firstDayOfWeek: 1 },
+            maxDate: "today", // Ne dozvoli buduće datume
+          });
+        }
       } else {
-        console.error("newClientModal nije pronađen!");
+        console.error("newClientModal nije pronađen u DOM-u!");
       }
-    };
+    }
 
     // Postavi event listener za all-clients-btn
     const allClientsBtn = document.getElementById("all-clients-btn");
@@ -519,82 +536,104 @@ function closeModal() {
   }
 }
 
-async function saveClient() {
-  const name = document.getElementById("clientName").value;
-  const time = document.getElementById("clientTime").value;
-  const note = document.getElementById("clientNote").value;
+async function saveNewClient() {
+  console.log("Pokrećem saveNewClient");
+  const name = document.getElementById("newClientName").value.trim();
+  const phone = document.getElementById("newClientPhone").value.trim();
+  const email = document.getElementById("newClientEmail").value.trim();
+  const gender = document.querySelector('input[name="gender"]:checked')?.value || null; // Promenjeno sa '' na null
+  const birthday = document.getElementById("newClientBirthday").value.trim();
+  const address = document.getElementById("newClientAddress").value.trim();
+  const allergy = document.getElementById("newClientAllergy").value.trim();
+  const note = document.getElementById("newClientNote").value.trim();
 
-  if (!name || !time) {
-    alert("Unesite ime i vreme");
+  // Loguj unesene vrednosti za debagovanje
+  console.log("Uneseni podaci iz modala:", {
+    name,
+    phone,
+    email,
+    gender,
+    birthday,
+    address,
+    allergy,
+    note,
+  });
+
+  // Validacija
+  if (!name) {
+    console.warn("Ime i prezime su obavezni!");
+    showToast("Ime i prezime su obavezni!", "error");
+    return;
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (email && !emailRegex.test(email)) {
+    console.warn("Nevažeća e-mail adresa:", email);
+    showToast("Unesite važeću e-mail adresu!", "error");
+    return;
+  }
+  const phoneRegex = /^\+?[\d\s-]{8,}$/;
+  if (phone && !phoneRegex.test(phone)) {
+    console.warn("Nevažeći broj telefona:", phone);
+    showToast("Unesite važeći broj telefona!", "error");
+    return;
+  }
+  if (birthday && !/^\d{4}-\d{2}-\d{2}$/.test(birthday)) {
+    console.warn("Nevažeći format datuma rođenja:", birthday);
+    showToast("Unesite validan datum rođenja (YYYY-MM-DD)!", "error");
     return;
   }
 
-  let iso;
-  const modal = document.getElementById("dayModal");
-
-  if (!modal) {
-    console.error("Greška: dayModal nije pronađen u DOM-u");
-    alert("Greška: Modal nije dostupan.");
-    return;
-  }
-
-  if (modal.dataset.selectedDate) {
-    iso = modal.dataset.selectedDate;
-  } else if (selectedCellElement) {
-    const label = selectedCellElement.querySelector("span.date-label");
-    const parentH3 = selectedCellElement.querySelector("h3");
-
-    if (!label || !parentH3) {
-      console.error("Greška: label ili h3 nisu pronađeni u selectedCellElement", {
-        label: !!label,
-        parentH3: !!parentH3,
-      });
-      alert("Greška: Nisu pronađeni potrebni elementi za datum.");
-      return;
-    }
-
-    const dayName = parentH3.textContent.split(" ")[0];
-    const dayNumber = label.textContent.trim();
-
-    const baseDate = getMonday(currentDate);
-    const weekdays = ["Pon", "Uto", "Sre", "Čet", "Pet", "Sub", "Ned"];
-    const dayIndex = weekdays.indexOf(dayName);
-
-    if (dayIndex === -1) {
-      console.error("Greška: Dan nije pronađen u weekdays nizu:", dayName);
-      alert("Greška: Nevažeći dan.");
-      return;
-    }
-
-    const date = new Date(baseDate);
-    date.setDate(baseDate.getDate() + dayIndex);
-    date.setHours(0, 0, 0, 0);
-
-    iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-  } else {
-    console.error("Greška: Niti je izabran datum u modalu niti je postavljen selectedCellElement");
-    alert("Greška: Nije izabran datum.");
-    return;
-  }
+  const newClient = {
+    name,
+    phone: phone || null,
+    email: email || null,
+    gender: gender || null,
+    birthday: birthday || null,
+    address: address || null,
+    allergy: allergy || null,
+    note: note || null,
+    date: new Date().toISOString().split("T")[0],
+    time: "00:00",
+    completed: false,
+  };
 
   try {
-    const response = await fetch("/api/clients", {
+    console.log("Šaljem POST zahtev na /api/clients/new sa podacima:", newClient);
+    const response = await fetch("/api/clients/new", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: iso, name, time, note }),
+      body: JSON.stringify(newClient),
     });
-    if (!response.ok) throw new Error("Greška pri dodavanju klijenta");
-    const newClient = await response.json();
-    if (!clientData[iso]) clientData[iso] = [];
-    clientData[iso].push(newClient);
+    const responseText = await response.text();
+    console.log("Odgovor servera:", { status: response.status, text: responseText });
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = JSON.parse(responseText);
+      } catch (e) {
+        errorData = { message: responseText };
+      }
+      throw new Error(errorData.message || "Greška pri dodavanju klijenta");
+    }
+    const savedClient = JSON.parse(responseText);
+    console.log("Klijent sačuvan na serveru:", savedClient);
+    const isoDate = savedClient.date;
+    if (!clientData[isoDate]) clientData[isoDate] = [];
+    clientData[isoDate].push(savedClient);
+    closeNewClientModal();
+    showToast("Klijent uspešno sačuvan!", "success");
     renderClientsForCurrentWeek();
-    if (document.getElementById("clientsList")) {
+    if (document.getElementById("clients-view").classList.contains("active")) {
       renderClientsList();
     }
-    closeModal();
+    if (document.getElementById("new-client-view").classList.contains("active")) {
+      const searchTerm = document.getElementById("client-search")?.value || '';
+      const filterValue = document.getElementById("client-filter")?.value || 'all';
+      renderClientsBelowButton(searchTerm, filterValue);
+    }
   } catch (error) {
-    console.error("Greška pri čuvanju klijenta:", error);
-    alert("Greška pri čuvanju klijenta");
+    console.error("Greška pri čuvanju klijenta:", error.message);
+    showToast(`Greška pri čuvanju klijenta: ${error.message}`, "error");
   }
 }
 
@@ -1348,12 +1387,26 @@ function closeNewClientModal() {
     console.log("newClientModal pronađen, dodajem 'hidden' i uklanjam 'active'");
     modal.classList.add("hidden");
     modal.classList.remove("active");
-    const nameInput = document.getElementById("newClientName");
-    const phoneInput = document.getElementById("newClientPhone");
-    const emailInput = document.getElementById("newClientEmail");
-    if (nameInput) nameInput.value = "";
-    if (phoneInput) phoneInput.value = "";
-    if (emailInput) emailInput.value = "";
+    const inputs = [
+      "newClientName",
+      "newClientPhone",
+      "newClientEmail",
+      "newClientBirthday",
+      "newClientAddress",
+      "newClientAllergy",
+      "newClientNote"
+    ];
+    inputs.forEach(id => {
+      const input = document.getElementById(id);
+      if (input) input.value = '';
+    });
+    // Reset radio buttons
+    document.querySelectorAll('input[name="gender"]').forEach(radio => radio.checked = false);
+    // Uništi Flatpickr ako postoji
+    const birthdayInput = document.getElementById("newClientBirthday");
+    if (birthdayInput && birthdayInput._flatpickr) {
+      birthdayInput._flatpickr.destroy();
+    }
   } else {
     console.error("newClientModal nije pronađen!");
   }
@@ -1371,34 +1424,59 @@ async function saveNewClient() {
   const name = document.getElementById("newClientName").value.trim();
   const phone = document.getElementById("newClientPhone").value.trim();
   const email = document.getElementById("newClientEmail").value.trim();
+  const gender = document.querySelector('input[name="gender"]:checked')?.value || null; // Promenjeno sa '' na null
+  const birthday = document.getElementById("newClientBirthday").value.trim();
+  const address = document.getElementById("newClientAddress").value.trim();
+  const allergy = document.getElementById("newClientAllergy").value.trim();
+  const note = document.getElementById("newClientNote").value.trim();
 
+  // Loguj unesene vrednosti
+  console.log("Uneseni podaci iz modala:", {
+    name,
+    phone,
+    email,
+    gender,
+    birthday,
+    address,
+    allergy,
+    note,
+  });
+
+  // Validacija
   if (!name) {
     console.warn("Ime i prezime su obavezni!");
     showToast("Ime i prezime su obavezni!", "error");
     return;
   }
-
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (email && !emailRegex.test(email)) {
     console.warn("Nevažeća e-mail adresa:", email);
     showToast("Unesite važeću e-mail adresu!", "error");
     return;
   }
-
-  const phoneRegex = /^\+?[\d\s-]{9,}$/;
+  const phoneRegex = /^\+?[\d\s-]{8,}$/;
   if (phone && !phoneRegex.test(phone)) {
     console.warn("Nevažeći broj telefona:", phone);
     showToast("Unesite važeći broj telefona!", "error");
     return;
   }
+  if (birthday && !/^\d{4}-\d{2}-\d{2}$/.test(birthday)) {
+    console.warn("Nevažeći format datuma rođenja:", birthday);
+    showToast("Unesite validan datum rođenja (YYYY-MM-DD)!", "error");
+    return;
+  }
 
   const newClient = {
     name,
-    phone,
-    email,
-    date: new Date().toISOString().split("T")[0], // Danas kao podrazumevani datum
-    time: "00:00", // Privremeno vreme
-    note: "",
+    phone: phone || null,
+    email: email || null,
+    gender: gender || null,
+    birthday: birthday || null,
+    address: address || null,
+    allergy: allergy || null,
+    note: note || null,
+    date: new Date().toISOString().split("T")[0],
+    time: "00:00",
     completed: false,
   };
 
@@ -1409,43 +1487,32 @@ async function saveNewClient() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newClient),
     });
+    const responseText = await response.text();
+    console.log("Odgovor servera:", { status: response.status, text: responseText });
     if (!response.ok) {
-      const errorData = await response.json();
+      let errorData;
+      try {
+        errorData = JSON.parse(responseText);
+      } catch (e) {
+        errorData = { message: responseText };
+      }
       throw new Error(errorData.message || "Greška pri dodavanju klijenta");
     }
-    const savedClient = await response.json();
+    const savedClient = JSON.parse(responseText);
     console.log("Klijent sačuvan na serveru:", savedClient);
-
-    // Ažuriraj clientData
     const isoDate = savedClient.date;
     if (!clientData[isoDate]) clientData[isoDate] = [];
     clientData[isoDate].push(savedClient);
-    console.log("clientData ažuriran:", clientData);
-
-    // Zatvori modal
     closeNewClientModal();
-    console.log("Modal zatvoren");
-
-    // Prikazi notifikaciju
     showToast("Klijent uspešno sačuvan!", "success");
-
-    // Osveži prikaze
-    console.log("Osvežavam kalendar putem renderClientsForCurrentWeek");
     renderClientsForCurrentWeek();
-
     if (document.getElementById("clients-view").classList.contains("active")) {
-      console.log("clients-view je aktivan, osvežavam listu klijenata putem renderClientsList");
       renderClientsList();
-    } else {
-      console.log("clients-view nije aktivan");
     }
-
     if (document.getElementById("new-client-view").classList.contains("active")) {
       const searchTerm = document.getElementById("client-search")?.value || '';
-      console.log("new-client-view je aktivan, osvežavam listu klijenata putem renderClientsBelowButton sa searchTerm:", searchTerm);
-      renderClientsBelowButton(searchTerm);
-    } else {
-      console.log("new-client-view nije aktivan");
+      const filterValue = document.getElementById("client-filter")?.value || 'all';
+      renderClientsBelowButton(searchTerm, filterValue);
     }
   } catch (error) {
     console.error("Greška pri čuvanju klijenta:", error.message);
@@ -1496,11 +1563,17 @@ async function renderClientsBelowButton(searchTerm = '', filterValue = 'all') {
       .map(client => {
         const nameMatch = client.name.toLowerCase();
         const phoneMatch = (client.phone || '').toLowerCase();
+        const addressMatch = (client.address || '').toLowerCase();
+        const allergyMatch = (client.allergy || '').toLowerCase();
+        const noteMatch = (client.note || '').toLowerCase();
         let score = 0;
         if (nameMatch.startsWith(lowerSearchTerm)) score += 10;
         else if (nameMatch.includes(lowerSearchTerm)) score += 5;
         if (phoneMatch.startsWith(lowerSearchTerm)) score += 8;
         else if (phoneMatch.includes(lowerSearchTerm)) score += 3;
+        if (addressMatch.includes(lowerSearchTerm)) score += 2;
+        if (allergyMatch.includes(lowerSearchTerm)) score += 2;
+        if (noteMatch.includes(lowerSearchTerm)) score += 2;
         return { client, score };
       })
       .filter(item => item.score > 0)
@@ -1540,14 +1613,96 @@ async function renderClientsBelowButton(searchTerm = '', filterValue = 'all') {
       ? createdAt.toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit', year: 'numeric' })
       : 'Nepoznato';
 
+    const genderText = client.gender === 'male' ? 'Muški' : client.gender === 'female' ? 'Ženski' : 'Nije navedeno';
+
     clientDiv.innerHTML = `
       <span class="client-name" title="${client.name}">${displayName}</span>
       <span class="client-phone" title="${client.phone || 'Nema broja'}">${displayPhone}</span>
+      <span class="client-gender" title="${genderText}">${genderText}</span>
       <span class="client-created" title="${displayDate}">${displayDate}</span>
     `;
     clientDiv.addEventListener('click', () => {
-      alert(`Klijent: ${client.name}, Telefon: ${client.phone || 'Nema broja'}, Kreiran: ${displayDate}`);
+      alert(`Klijent: ${client.name}\nTelefon: ${client.phone || 'Nema broja'}\nEmail: ${client.email || 'Nije naveden'}\nPol: ${genderText}\nRođendan: ${client.birthday || 'Nije naveden'}\nAdresa: ${client.address || 'Nije navedena'}\nAlergija: ${client.allergy || 'Nije navedena'}\nNapomena: ${client.note || 'Nije navedena'}\nKreiran: ${displayDate}`);
     });
     clientsBelowBtn.appendChild(clientDiv);
   });
+}
+
+async function saveClient() {
+  const name = document.getElementById("clientName").value;
+  const time = document.getElementById("clientTime").value;
+  const note = document.getElementById("clientNote").value;
+
+  if (!name || !time) {
+    alert("Unesite ime i vreme");
+    return;
+  }
+
+  let iso;
+  const modal = document.getElementById("dayModal");
+
+  if (!modal) {
+    console.error("Greška: dayModal nije pronađen u DOM-u");
+    alert("Greška: Modal nije dostupan.");
+    return;
+  }
+
+  if (modal.dataset.selectedDate) {
+    iso = modal.dataset.selectedDate;
+  } else if (selectedCellElement) {
+    const label = selectedCellElement.querySelector("span.date-label");
+    const parentH3 = selectedCellElement.querySelector("h3");
+
+    if (!label || !parentH3) {
+      console.error("Greška: label ili h3 nisu pronađeni u selectedCellElement", {
+        label: !!label,
+        parentH3: !!parentH3,
+      });
+      alert("Greška: Nisu pronađeni potrebni elementi za datum.");
+      return;
+    }
+
+    const dayName = parentH3.textContent.split(" ")[0];
+    const dayNumber = label.textContent.trim();
+
+    const baseDate = getMonday(currentDate);
+    const weekdays = ["Pon", "Uto", "Sre", "Čet", "Pet", "Sub", "Ned"];
+    const dayIndex = weekdays.indexOf(dayName);
+
+    if (dayIndex === -1) {
+      console.error("Greška: Dan nije pronađen u weekdays nizu:", dayName);
+      alert("Greška: Nevažeći dan.");
+      return;
+    }
+
+    const date = new Date(baseDate);
+    date.setDate(baseDate.getDate() + dayIndex);
+    date.setHours(0, 0, 0, 0);
+
+    iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  } else {
+    console.error("Greška: Niti je izabran datum u modalu niti je postavljen selectedCellElement");
+    alert("Greška: Nije izabran datum.");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/clients", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date: iso, name, time, note }),
+    });
+    if (!response.ok) throw new Error("Greška pri dodavanju klijenta");
+    const newClient = await response.json();
+    if (!clientData[iso]) clientData[iso] = [];
+    clientData[iso].push(newClient);
+    renderClientsForCurrentWeek();
+    if (document.getElementById("clientsList")) {
+      renderClientsList();
+    }
+    closeModal();
+  } catch (error) {
+    console.error("Greška pri čuvanju klijenta:", error);
+    alert("Greška pri čuvanju klijenta");
+  }
 }

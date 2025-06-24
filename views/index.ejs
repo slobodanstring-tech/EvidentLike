@@ -116,12 +116,46 @@
                     <i class="fas fa-times"></i>
                 </span>
             </div>
-            <input type="text" id="newClientName" placeholder="Ime i prezime" autocomplete="off" />
-            <input type="tel" id="newClientPhone" placeholder="Mobilni telefon" autocomplete="off" />
-            <input type="email" id="newClientEmail" placeholder="E-mail" autocomplete="off" />
+            <div class="form-group">
+                <label for="newClientName">Ime i prezime *</label>
+                <input type="text" id="newClientName" placeholder="Ime i prezime" class="md3-text-field__input" autocomplete="off" required />
+            </div>
+            <div class="form-group">
+                <label for="newClientPhone">Mobilni telefon</label>
+                <input type="tel" id="newClientPhone" placeholder="Mobilni telefon" class="md3-text-field__input" autocomplete="off" />
+            </div>
+            <div class="form-group">
+                <label for="newClientEmail">E-mail</label>
+                <input type="email" id="newClientEmail" placeholder="E-mail" class="md3-text-field__input" autocomplete="off" />
+            </div>
+            <div class="form-group">
+                <label>Pol</label>
+                <div class="radio-group">
+                    <input type="radio" id="genderMale" name="gender" value="male">
+                    <label for="genderMale">Muški</label>
+                    <input type="radio" id="genderFemale" name="gender" value="female">
+                    <label for="genderFemale">Ženski</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="newClientBirthday">Rođendan</label>
+                <input type="text" id="newClientBirthday" placeholder="Izaberite datum" class="md3-text-field__input" autocomplete="off" />
+            </div>
+            <div class="form-group">
+                <label for="newClientAddress">Adresa</label>
+                <input type="text" id="newClientAddress" placeholder="Adresa" class="md3-text-field__input" autocomplete="off" />
+            </div>
+            <div class="form-group">
+                <label for="newClientAllergy">Alergija</label>
+                <textarea id="newClientAllergy" placeholder="Alergije..." class="md3-text-field__textarea" autocomplete="off"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="newClientNote">Napomena</label>
+                <textarea id="newClientNote" placeholder="Napomena..." class="md3-text-field__textarea" autocomplete="off"></textarea>
+            </div>
             <div class="modal-actions">
-                <button onclick="saveNewClient()">Sačuvaj</button>
-                <button onclick="closeNewClientModal()">Otkaži</button>
+                <button class="md3-button md3-button--text" onclick="closeNewClientModal()">Otkaži</button>
+                <button class="md3-button md3-button--filled" onclick="saveNewClient()">Sačuvaj</button>
             </div>
         </div>
     </div>
