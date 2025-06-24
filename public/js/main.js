@@ -813,62 +813,45 @@ function showClientInfoPopup(client, x, y) {
   document.body.appendChild(popup);
 
   // Proveri podatke o klijentu
-  if (!client || !client.name || !client.time || !client.date) {
+  if (!client || !client.name) {
     console.error("Nepotpuni podaci o klijentu:", client);
     alert("Greška: Nepotpuni podaci o klijentu.");
     return;
   }
 
-  const date = new Date(client.date);
-  const formattedDate = `${date.getDate()}. ${[
-    "Januar",
-    "Februar",
-    "Mart",
-    "April",
-    "Maj",
-    "Jun",
-    "Jul",
-    "Avgust",
-    "Septembar",
-    "Oktobar",
-    "Novembar",
-    "Decembar",
-  ][date.getMonth()]} ${date.getFullYear()}`;
+  // Formatiraj datum kreiranja
+  const createdAt = client.createdAt ? new Date(client.createdAt) : new Date();
+  const formattedDate = createdAt.toLocaleDateString('sr-RS', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric'
+  });
 
-  // Postavi dataset atribut
-  popup.dataset.clientData = JSON.stringify(client);
-  popup.dataset.clientIndex = client.index;
-  popup.dataset.clientDate = client.date;
-
-  // Postavi HTML sa tri dugmeta
+  // Postavi HTML sa svim podacima i dugmadima Otkaži/OK
   popup.innerHTML = `
     <div class="md3-dialog__header">
-      <p class="md3-dialog__date" id="clientDateDisplay">${formattedDate}</p>
+      <h3 class="md3-dialog__title">${client.name || "Nepoznato ime"}</h3>
       <span class="close-icon"><i class="fas fa-times"></i></span>
-      <input type="text" id="clientDateInput" name="client_date" value="${client.date}" class="md3-text-field__input hidden" autocomplete="off" tabindex="1" />
-      <h3 class="md3-dialog__title" id="clientNameTitle">${client.name || "Nepoznato ime"}</h3>
-      <input type="text" id="clientNameInput" name="client_name" value="${client.name || ""}" class="md3-text-field__input hidden" autocomplete="off" tabindex="2" />
     </div>
     <div class="md3-dialog__content">
-      <p><strong>Vreme:</strong> <span id="clientTimeDisplay">${client.time || "Nema vremena"}</span></p>
-      <input type="text" id="clientTimeInput" name="client_time" value="${client.time || ""}" class="md3-text-field__input hidden" autocomplete="off" tabindex="3" />
-      <p><strong>Napomena:</strong> <span id="clientNoteDisplay">${client.note || ""}</span></p>
-      <textarea id="clientNoteInput" name="client_note" class="md3-text-field__textarea hidden" autocomplete="off" tabindex="4">${client.note || ""}</textarea>
+      <p><strong>Telefon:</strong> ${client.phone || "Nema broja"}</p>
+      <p><strong>E-mail:</strong> ${client.email || "Nije naveden"}</p>
+      <p><strong>Pol:</strong> ${client.gender === 'male' ? 'Muški' : client.gender === 'female' ? 'Ženski' : 'Nije navedeno'}</p>
+      <p><strong>Rođendan:</strong> ${client.birthday || "Nije naveden"}</p>
+      <p><strong>Adresa:</strong> ${client.address || "Nije navedena"}</p>
+      <p><strong>Alergija:</strong> ${client.allergy || "Nije navedena"}</p>
+      <p><strong>Napomena:</strong> ${client.note || "Nije navedena"}</p>
+      <p><strong>Kreiran:</strong> ${formattedDate}</p>
     </div>
     <div class="md3-dialog__actions">
-      <button class="md3-button md3-button--text completed-btn">
-        ${client.completed ? "Vrati u zakazano" : "Završeno"}
-      </button>
-      <button class="md3-button md3-button--text edit-btn">Izmeniti</button>
-      <button class="md3-button md3-button--text delete-btn">Obriši</button>
+      <button class="md3-button md3-button--text cancel-btn">Otkaži</button>
+      <button class="md3-button md3-button--filled ok-btn">OK</button>
     </div>
   `;
 
-  popup.dataset.flatpickrInitialized = "false";
-
   // Pozicioniranje pop-up-a
   const popupWidth = 280;
-  const popupHeight = popup.offsetHeight || 200;
+  const popupHeight = popup.offsetHeight || 300; // Procena visine ako nije dostupna
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
   const scrollX = window.scrollX || window.pageXOffset;
@@ -893,24 +876,15 @@ function showClientInfoPopup(client, x, y) {
   popup.classList.add("active");
   console.log("Popup postavljen na poziciju:", { left: adjustedX, top: adjustedY });
 
-  // Dodaj event listenere
+  // Dodaj event listenere za dugmad
   popup.addEventListener("click", (e) => {
-    const target = e.target.closest(".close-icon, .completed-btn, .edit-btn, .delete-btn");
+    const target = e.target.closest(".close-icon, .cancel-btn, .ok-btn");
     if (!target) return;
     e.stopPropagation();
 
-    if (target.classList.contains("close-icon")) {
-      console.log("Klik na close-icon");
+    if (target.classList.contains("close-icon") || target.classList.contains("cancel-btn") || target.classList.contains("ok-btn")) {
+      console.log("Klik na close-icon, cancel-btn ili ok-btn");
       closeClientInfoPopup();
-    } else if (target.classList.contains("completed-btn")) {
-      console.log("Klik na Završeno/Vrati u zakazano");
-      markClientCompleted();
-    } else if (target.classList.contains("edit-btn")) {
-      console.log("Klik na Izmeniti");
-      toggleEditMode();
-    } else if (target.classList.contains("delete-btn")) {
-      console.log("Klik na Obriši");
-      deleteClient(popup);
     }
   });
 
@@ -1621,8 +1595,23 @@ async function renderClientsBelowButton(searchTerm = '', filterValue = 'all') {
       <span class="client-gender" title="${genderText}">${genderText}</span>
       <span class="client-created" title="${displayDate}">${displayDate}</span>
     `;
-    clientDiv.addEventListener('click', () => {
-      alert(`Klijent: ${client.name}\nTelefon: ${client.phone || 'Nema broja'}\nEmail: ${client.email || 'Nije naveden'}\nPol: ${genderText}\nRođendan: ${client.birthday || 'Nije naveden'}\nAdresa: ${client.address || 'Nije navedena'}\nAlergija: ${client.allergy || 'Nije navedena'}\nNapomena: ${client.note || 'Nije navedena'}\nKreiran: ${displayDate}`);
+    clientDiv.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const clientData = {
+        name: client.name,
+        phone: client.phone || 'Nema broja',
+        email: client.email || 'Nije naveden',
+        gender: client.gender || 'Nije navedeno',
+        birthday: client.birthday || 'Nije naveden',
+        address: client.address || 'Nije navedena',
+        allergy: client.allergy || 'Nije navedena',
+        note: client.note || 'Nije navedena',
+        createdAt: client.createdAt || 'Nepoznato',
+        date: client.createdAt ? new Date(client.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        index: 0, // Indeks nije neophodan ovde jer ovo nije vezano za termine
+        completed: false // Podrazumevano, jer ovo nije termin
+      };
+      showClientInfoPopup(clientData, e.pageX, e.pageY);
     });
     clientsBelowBtn.appendChild(clientDiv);
   });
